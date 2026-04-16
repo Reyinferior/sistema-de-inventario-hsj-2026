@@ -50,6 +50,12 @@ var ENCABEZADOS = [
 
 // ---- PUNTO DE ENTRADA WEB ----
 function doGet(e) {
+  var pagina = e && e.parameter && e.parameter.pagina;
+  if (pagina === 'formulario') {
+    return HtmlService.createHtmlOutputFromFile('formulario')
+      .setTitle('Reportar Problema — Hospital San José')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('Inventario Equipos — Hospital San José')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -1139,5 +1145,214 @@ function obtenerListasImpresoras() {
     estados: [...new Set(result.estados)],
     modelos: [...new Set(result.modelos)]
   };
+}
+
+// ============================================================
+//  MÓDULO TICKETS
+// ============================================================
+
+var HOJA_TICKETS = "Tickets";
+
+var COLUMNAS_TICKETS = [
+  "id_ticket","usuario","area","equipo","problema",
+  "prioridad","estado","tecnico","nota_tecnico",
+  "origen","fecha_registro","fecha_actualizacion"
+];
+
+var ENCABEZADOS_TICKETS = [
+  "ID Ticket","Usuario","Área / Servicio","Equipo Afectado","Descripción del Problema",
+  "Prioridad","Estado","Técnico Asignado","Nota del Técnico",
+  "Origen","Fecha Registro","Última Actualización"
+];
+
+function _inicializarHojaTickets(ss) {
+  var hoja = ss.getSheetByName(HOJA_TICKETS);
+  if (!hoja) {
+    hoja = ss.insertSheet(HOJA_TICKETS);
+    hoja.appendRow(ENCABEZADOS_TICKETS);
+    var rng = hoja.getRange(1, 1, 1, ENCABEZADOS_TICKETS.length);
+    rng.setBackground('#1C5F7B');
+    rng.setFontColor('#FFFFFF');
+    rng.setFontWeight('bold');
+    rng.setFontSize(10);
+    hoja.setFrozenRows(1);
+    hoja.setColumnWidths(1, ENCABEZADOS_TICKETS.length, 150);
+  }
+  return hoja;
+}
+
+function _generarIdTicket(hoja) {
+  var lastRow = hoja.getLastRow();
+  var num = lastRow; // fila 1 = encabezado, filas siguientes = datos
+  return 'TKT-' + String(num).padStart(4, '0');
+}
+
+function obtenerTicketsCached() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cached = cache.get('tickets_data');
+    if (cached) return JSON.parse(cached);
+    var datos = _leerTickets();
+    cache.put('tickets_data', JSON.stringify(datos), 120);
+    return datos;
+  } catch(err) {
+    throw new Error('Error al obtener tickets: ' + err.message);
+  }
+}
+
+function _leerTickets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = _inicializarHojaTickets(ss);
+  if (hoja.getLastRow() < 2) return [];
+  var datos = hoja.getDataRange().getValues();
+  var resultado = [];
+  for (var i = 1; i < datos.length; i++) {
+    var fila = datos[i];
+    if (!fila[0]) continue;
+    var obj = {};
+    COLUMNAS_TICKETS.forEach(function(col, idx) { obj[col] = fila[idx] ? fila[idx].toString() : ''; });
+    resultado.push(obj);
+  }
+  return resultado.reverse(); // más recientes primero
+}
+
+function registrarTicket(ticket) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = _inicializarHojaTickets(ss);
+    var id = _generarIdTicket(hoja);
+    var ahora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    var fila = [
+      id,
+      ticket.usuario || '',
+      ticket.area || '',
+      ticket.equipo || '',
+      ticket.problema || '',
+      ticket.prioridad || 'Media',
+      'Nuevo',
+      '',
+      '',
+      ticket.origen || 'Formulario',
+      ahora,
+      ahora
+    ];
+    hoja.appendRow(fila);
+    CacheService.getScriptCache().remove('tickets_data');
+    return 'Ticket ' + id + ' registrado correctamente.';
+  } catch(err) {
+    throw new Error('Error al registrar ticket: ' + err.message);
+  }
+}
+
+function actualizarTicket(ticket) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = _inicializarHojaTickets(ss);
+    var datos = hoja.getDataRange().getValues();
+    for (var i = 1; i < datos.length; i++) {
+      if (datos[i][0] && datos[i][0].toString() === ticket.id_ticket) {
+        var ahora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+        hoja.getRange(i + 1, 7).setValue(ticket.estado || datos[i][6]);
+        hoja.getRange(i + 1, 8).setValue(ticket.tecnico || datos[i][7]);
+        hoja.getRange(i + 1, 9).setValue(ticket.nota_tecnico || datos[i][8]);
+        hoja.getRange(i + 1, 12).setValue(ahora);
+        CacheService.getScriptCache().remove('tickets_data');
+        return 'Ticket ' + ticket.id_ticket + ' actualizado correctamente.';
+      }
+    }
+    throw new Error('Ticket no encontrado.');
+  } catch(err) {
+    throw new Error('Error al actualizar ticket: ' + err.message);
+  }
+}
+
+function eliminarTicket(id) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = _inicializarHojaTickets(ss);
+    var datos = hoja.getDataRange().getValues();
+    for (var i = 1; i < datos.length; i++) {
+      if (datos[i][0] && datos[i][0].toString() === id) {
+        hoja.deleteRow(i + 1);
+        CacheService.getScriptCache().remove('tickets_data');
+        return 'Ticket ' + id + ' eliminado correctamente.';
+      }
+    }
+    throw new Error('Ticket no encontrado.');
+  } catch(err) {
+    throw new Error('Error al eliminar ticket: ' + err.message);
+  }
+}
+
+// ============================================================
+//  LEER TICKETS DESDE GMAIL (trigger automático)
+//  Configura un trigger: Editar > Triggers > leerTicketsDeGmail
+//  Tipo: Time-driven, cada 5 o 10 minutos
+// ============================================================
+function leerTicketsDeGmail() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = _inicializarHojaTickets(ss);
+    // Busca correos no leídos con etiqueta "soporte-ti" o asunto que contenga [TICKET] o [SOPORTE]
+    var hilos = GmailApp.search('is:unread subject:([TICKET] OR [SOPORTE] OR soporte ti) newer_than:1d', 0, 20);
+    if (hilos.length === 0) return 'Sin correos nuevos.';
+    var procesados = 0;
+    hilos.forEach(function(hilo) {
+      var mensajes = hilo.getMessages();
+      var msg = mensajes[mensajes.length - 1]; // último mensaje del hilo
+      var asunto = msg.getSubject();
+      var cuerpo  = msg.getPlainBody().substring(0, 500);
+      var remitente = msg.getFrom();
+      var fecha = Utilities.formatDate(msg.getDate(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+      // Extraer nombre del remitente (antes del <email>)
+      var nombreMatch = remitente.match(/^"?([^"<]+)"?\s*</);
+      var nombre = nombreMatch ? nombreMatch[1].trim() : remitente;
+      var id = _generarIdTicket(hoja);
+      hoja.appendRow([
+        id, nombre, '', '', asunto + '\n' + cuerpo,
+        'Media', 'Nuevo', '', '',
+        'Correo', fecha, fecha
+      ]);
+      hilo.markRead();
+      procesados++;
+    });
+    CacheService.getScriptCache().remove('tickets_data');
+    return 'Se crearon ' + procesados + ' ticket(s) desde Gmail.';
+  } catch(err) {
+    throw new Error('Error al leer Gmail: ' + err.message);
+  }
+}
+
+// ============================================================
+//  ENVIAR NOTIFICACIÓN POR CORREO AL TÉCNICO ASIGNADO
+// ============================================================
+function notificarTecnico(ticket) {
+  try {
+    // Mapa técnico → correo (ajustar según tu organización)
+    var correosTecnicos = {
+      'José Flores':   'jose.flores@hospitalSanJose.pe',
+      'Rosa Mamani':   'rosa.mamani@hospitalSanJose.pe',
+      'Pedro Quispe':  'pedro.quispe@hospitalSanJose.pe',
+      'Luis Cárdenas': 'luis.cardenas@hospitalSanJose.pe'
+    };
+    var correo = correosTecnicos[ticket.tecnico];
+    if (!correo) return;
+    GmailApp.sendEmail(
+      correo,
+      '[TICKET ASIGNADO] ' + ticket.id_ticket + ' — ' + ticket.problema.substring(0, 60),
+      'Hola ' + ticket.tecnico + ',\n\n' +
+      'Se te ha asignado el siguiente ticket:\n\n' +
+      'ID: ' + ticket.id_ticket + '\n' +
+      'Usuario: ' + ticket.usuario + '\n' +
+      'Área: ' + ticket.area + '\n' +
+      'Equipo: ' + ticket.equipo + '\n' +
+      'Problema: ' + ticket.problema + '\n' +
+      'Prioridad: ' + ticket.prioridad + '\n\n' +
+      'Por favor atender a la brevedad.\n\n' +
+      '— Sistema de Tickets, Hospital San José'
+    );
+  } catch(err) {
+    Logger.log('Error al notificar técnico: ' + err.message);
+  }
 }
 

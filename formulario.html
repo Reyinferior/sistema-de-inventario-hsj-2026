@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_top">
+  <title>Reportar Problema — Hospital San José</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1C5F7B 0%, #2E86AB 50%, #A8DADC 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      width: 100%;
+      max-width: 540px;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #1C5F7B;
+      color: white;
+      padding: 28px 32px 22px;
+      text-align: center;
+    }
+    .header .logo {
+      font-size: 2.2rem;
+      margin-bottom: 6px;
+    }
+    .header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .header p {
+      font-size: 0.78rem;
+      opacity: 0.85;
+      margin: 0;
+    }
+
+    .form-body {
+      padding: 28px 32px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #1C5F7B;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #dce8ef;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      color: #333;
+      transition: border-color 0.2s;
+      background: #F8FBFD;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #2E86AB;
+      background: white;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 480px) {
+      .form-row { grid-template-columns: 1fr; }
+      .form-body { padding: 20px; }
+      .header { padding: 20px; }
+    }
+
+    .prioridad-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .prioridad-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 6px;
+      border: 2px solid #dce8ef;
+      border-radius: 8px;
+      background: #F8FBFD;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      color: #555;
+    }
+    .prioridad-btn:hover { border-color: #2E86AB; }
+    .prioridad-btn.selected-baja     { border-color: #27ae60; background: #d4edda; color: #155724; }
+    .prioridad-btn.selected-media    { border-color: #3498db; background: #d1ecf1; color: #0c5460; }
+    .prioridad-btn.selected-alta     { border-color: #e67e22; background: #fef3cd; color: #856404; }
+    .prioridad-btn.selected-urgente  { border-color: #e74c3c; background: #fde8e8; color: #c0392b; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: #1C5F7B;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-submit:hover  { background: #2E86AB; }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { background: #aaa; cursor: not-allowed; }
+
+    .mensaje {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .mensaje.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+    .mensaje.error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6cb; display: block; }
+    .mensaje.info    { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; display: block; }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #aaa;
+      margin-top: 18px;
+    }
+
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 40px 32px;
+    }
+    .success-screen .icon { font-size: 4rem; margin-bottom: 12px; }
+    .success-screen h2 { color: #1C5F7B; font-size: 1.2rem; margin-bottom: 8px; }
+    .success-screen p  { color: #555; font-size: 0.85rem; margin-bottom: 6px; }
+    .success-screen .ticket-id {
+      display: inline-block;
+      background: #EBF5FB;
+      border: 2px solid #2E86AB;
+      color: #1C5F7B;
+      font-size: 1.1rem;
+      font-weight: 800;
+      padding: 6px 20px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .btn-otro {
+      margin-top: 16px;
+      padding: 10px 24px;
+      background: #1C5F7B;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-otro:hover { background: #2E86AB; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="logo">🏥</div>
+    <h1>HOSPITAL SAN JOSÉ</h1>
+    <p>Unidad de Tecnologías de la Información</p>
+    <p style="margin-top:4px;font-size:0.82rem;opacity:0.95;font-weight:600;">Formulario de Reporte de Problemas</p>
+  </div>
+
+  <!-- FORMULARIO -->
+  <div class="form-body" id="formSection">
+    <div class="mensaje" id="msgFormulario"></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre Completo *</label>
+        <input type="text" id="f_usuario" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="form-group">
+        <label>Área / Servicio *</label>
+        <input type="text" id="f_area" placeholder="Ej: Laboratorio">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Equipo Afectado</label>
+      <select id="f_equipo">
+        <option value="">-- Seleccionar equipo (opcional) --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Prioridad *</label>
+      <div class="prioridad-group">
+        <button type="button" class="prioridad-btn" onclick="seleccionarPrioridad('Baja',this)">🟢 Baja</button>
+        <button type="button" class="prioridad-btn selected-media" onclick="seleccionarPrioridad('Media',this)">🔵 Media</button>
+        <button type="button" class="prioridad-btn" onclick="seleccionarPrioridad('Alta',this)">🟠 Alta</button>
+        <button type="button" class="prioridad-btn" onclick="seleccionarPrioridad('Urgente',this)">🔴 Urgente</button>
+      </div>
+      <input type="hidden" id="f_prioridad" value="Media">
+    </div>
+
+    <div class="form-group">
+      <label>Descripción del Problema *</label>
+      <textarea id="f_problema" placeholder="Describa detalladamente el problema que está experimentando. Indique cuándo comenzó, qué mensajes de error aparecen, etc."></textarea>
+    </div>
+
+    <button class="btn-submit" id="btnEnviar" onclick="enviarFormulario()">
+      📩 Enviar Reporte
+    </button>
+
+    <div class="footer-note">
+      Su solicitud será atendida por el área de TI lo antes posible.<br>
+      En caso de urgencia llame al interno 200.
+    </div>
+  </div>
+
+  <!-- PANTALLA DE ÉXITO -->
+  <div class="success-screen" id="successSection">
+    <div class="icon">✅</div>
+    <h2>¡Ticket Registrado!</h2>
+    <p>Su problema fue reportado correctamente.</p>
+    <p>Su número de ticket es:</p>
+    <div class="ticket-id" id="ticketIdGenerado">TKT-0000</div>
+    <p style="margin-top:8px;">El área de TI lo atenderá a la brevedad posible.</p>
+    <br>
+    <button class="btn-otro" onclick="reiniciarFormulario()">📝 Reportar otro problema</button>
+  </div>
+
+</div>
+
+<script>
+  var _prioridadSeleccionada = 'Media';
+
+  function seleccionarPrioridad(valor, btn) {
+    _prioridadSeleccionada = valor;
+    document.getElementById('f_prioridad').value = valor;
+    document.querySelectorAll('.prioridad-btn').forEach(function(b) {
+      b.className = 'prioridad-btn';
+    });
+    btn.classList.add('selected-' + valor.toLowerCase());
+  }
+
+  function mostrarMensaje(tipo, texto) {
+    var el = document.getElementById('msgFormulario');
+    el.className = 'mensaje ' + tipo;
+    el.textContent = texto;
+  }
+
+  function enviarFormulario() {
+    var usuario  = document.getElementById('f_usuario').value.trim();
+    var area     = document.getElementById('f_area').value.trim();
+    var problema = document.getElementById('f_problema').value.trim();
+    var equipo   = document.getElementById('f_equipo').value;
+    var prioridad = _prioridadSeleccionada;
+
+    if (!usuario)  { mostrarMensaje('error', 'Por favor ingrese su nombre completo.'); return; }
+    if (!area)     { mostrarMensaje('error', 'Por favor ingrese su área o servicio.'); return; }
+    if (!problema) { mostrarMensaje('error', 'Por favor describa el problema.'); return; }
+
+    mostrarMensaje('info', 'Enviando su reporte...');
+    document.getElementById('btnEnviar').disabled = true;
+
+    var ticket = {
+      usuario: usuario,
+      area: area,
+      equipo: equipo,
+      problema: problema,
+      prioridad: prioridad,
+      origen: 'Formulario'
+    };
+
+    if (typeof google !== 'undefined') {
+      google.script.run
+        .withSuccessHandler(function(msg) {
+          var match = msg.match(/TKT-\d+/);
+          document.getElementById('ticketIdGenerado').textContent = match ? match[0] : 'TKT-????';
+          document.getElementById('formSection').style.display = 'none';
+          document.getElementById('successSection').style.display = 'block';
+        })
+        .withFailureHandler(function(err) {
+          mostrarMensaje('error', 'Error al enviar: ' + err);
+          document.getElementById('btnEnviar').disabled = false;
+        })
+        .registrarTicket(ticket);
+    } else {
+      // Modo demo local
+      setTimeout(function() {
+        document.getElementById('ticketIdGenerado').textContent = 'TKT-DEMO';
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('successSection').style.display = 'block';
+      }, 800);
+    }
+  }
+
+  function reiniciarFormulario() {
+    ['f_usuario','f_area','f_problema'].forEach(function(id){
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f_equipo').value = '';
+    seleccionarPrioridad('Media', document.querySelectorAll('.prioridad-btn')[1]);
+    document.getElementById('msgFormulario').className = 'mensaje';
+    document.getElementById('btnEnviar').disabled = false;
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('successSection').style.display = 'none';
+  }
+
+  // Cargar equipos en el selector
+  if (typeof google !== 'undefined') {
+    google.script.run
+      .withSuccessHandler(function(nombres) {
+        var sel = document.getElementById('f_equipo');
+        nombres.forEach(function(n) {
+          var opt = document.createElement('option');
+          opt.value = n; opt.textContent = n;
+          sel.appendChild(opt);
+        });
+      })
+      .obtenerEquiposParaSelector();
+  } else {
+    // Demo: agregar equipos de ejemplo
+    var demoEquipos = ['PC-ADM-001','PC-LAB-001','PC-EMG-001','PC-RH-001','PC-CON-001'];
+    var sel = document.getElementById('f_equipo');
+    demoEquipos.forEach(function(n) {
+      var opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+  }
+</script>
+
+</body>
+</html>
