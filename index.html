@@ -888,7 +888,131 @@ body.dark #r_buscar_tabla { color: #e0e0e0; }
         color: #0f1923;
       }
 
-
+      /* ===== TICKETS ===== */
+      .tickets-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        height: calc(100vh - 120px);
+      }
+      @media (max-width: 900px) {
+        .tickets-layout { grid-template-columns: 1fr; height: auto; }
+      }
+      .tickets-inbox {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .tickets-inbox-header {
+        background: #1C5F7B;
+        color: white;
+        padding: 14px 18px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .tickets-inbox-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .ticket-card {
+        background: #F8FBFD;
+        border: 1.5px solid #E5F2F7;
+        border-left: 4px solid #2E86AB;
+        border-radius: 8px;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .ticket-card:hover { background: #EBF5FB; border-color: #2E86AB; }
+      .ticket-card.nuevo  { border-left-color: #e74c3c; }
+      .ticket-card.asignado { border-left-color: #f39c12; }
+      .ticket-card.en-atencion { border-left-color: #3498db; }
+      .ticket-card.resuelto { border-left-color: #27ae60; }
+      .ticket-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 5px;
+      }
+      .ticket-card-usuario { font-weight: 700; font-size: 0.85rem; color: #1C5F7B; }
+      .ticket-card-hora { font-size: 0.7rem; color: #999; white-space: nowrap; }
+      .ticket-card-equipo { font-size: 0.75rem; color: #555; margin-bottom: 4px; }
+      .ticket-card-problema {
+        font-size: 0.78rem;
+        color: #333;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .ticket-card-origen {
+        font-size: 0.68rem;
+        color: #888;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .tickets-main {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .tickets-main-header {
+        background: #1C5F7B;
+        color: white;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .tickets-main-header h3 { margin: 0; font-size: 0.95rem; }
+      .tickets-stats {
+        display: flex;
+        gap: 10px;
+        padding: 14px 18px;
+        background: #F0F8FC;
+        border-bottom: 1px solid #E5F2F7;
+        flex-wrap: wrap;
+      }
+      .ticket-stat {
+        background: white;
+        border-radius: 8px;
+        padding: 8px 16px;
+        text-align: center;
+        border: 1px solid #E5F2F7;
+        min-width: 90px;
+        cursor: pointer;
+        transition: box-shadow 0.15s;
+      }
+      .ticket-stat:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+      .ticket-stat-num { font-size: 1.4rem; font-weight: 800; color: #1C5F7B; }
+      .ticket-stat-label { font-size: 0.68rem; color: #666; }
+      .tickets-table-wrap { flex: 1; overflow: auto; padding: 14px 18px; }
+      .ticket-badge-nuevo     { background:#fde8e8; color:#c0392b; }
+      .ticket-badge-asignado  { background:#fef3cd; color:#856404; }
+      .ticket-badge-en-atencion { background:#d1ecf1; color:#0c5460; }
+      .ticket-badge-resuelto  { background:#d4edda; color:#155724; }
+      body.dark .tickets-inbox,
+      body.dark .tickets-main { background: #1a2332; border-color: #2d3f55; }
+      body.dark .ticket-card { background: #1e2d3d; border-color: #2d3f55; }
+      body.dark .ticket-card:hover { background: #243447; }
+      body.dark .tickets-stats { background: #162030; }
+      body.dark .ticket-stat { background: #1a2332; border-color: #2d3f55; }
 
     </style>
   </head>
@@ -948,6 +1072,12 @@ body.dark #r_buscar_tabla { color: #e0e0e0; }
 </li>
 
             
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" onclick="showTab('tickets', this)" id="navTickets">
+              <span class="nav-icon">🎫</span>Tickets
+              <span id="ticketBadge" style="display:none;background:#e74c3c;color:white;border-radius:10px;font-size:0.68rem;padding:1px 7px;margin-left:6px;font-weight:700;"></span>
+            </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" onclick="showTab('configuracion', this)">
@@ -1972,6 +2102,71 @@ onmouseout="this.style.transform='scale(1)'">💬</button>
 
 
 
+<!-- ==================== TICKETS ==================== -->
+<div id="tickets" class="tab-content">
+  <div class="content-header" style="padding:16px 24px 10px;">
+    <h2>🎫 Gestión de Tickets</h2>
+  </div>
+  <div class="content-body" style="padding:0 24px 20px;">
+    <div id="msgTickets"></div>
+    <div class="tickets-layout">
+
+      <!-- BANDEJA DE ENTRADA -->
+      <div class="tickets-inbox">
+        <div class="tickets-inbox-header">
+          📬 Bandeja de Tickets
+          <span id="inboxCount" style="margin-left:auto;background:rgba(255,255,255,0.25);border-radius:10px;font-size:0.75rem;padding:2px 9px;">0</span>
+        </div>
+        <div style="padding:10px 10px 4px;border-bottom:1px solid #E5F2F7;">
+          <input type="text" id="filtroTicketsInbox" placeholder="🔍 Buscar en bandeja..." oninput="filtrarInbox()" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;">
+        </div>
+        <div class="tickets-inbox-list" id="ticketsInboxList">
+          <div style="text-align:center;color:#aaa;font-size:0.82rem;padding:30px 0;">Cargando tickets...</div>
+        </div>
+      </div>
+
+      <!-- PANEL PRINCIPAL -->
+      <div class="tickets-main">
+        <div class="tickets-main-header">
+          <h3>📋 Todos los Tickets</h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="filtroTicketsTabla" placeholder="Buscar..." oninput="filtrarTablaTickets()" style="padding:6px 12px;border:none;border-radius:6px;font-size:0.8rem;width:160px;">
+            <button class="btn btn-success" style="padding:6px 14px;font-size:0.8rem;" onclick="abrirModalNuevoTicket()">➕ Nuevo Ticket</button>
+            <button class="btn btn-secondary" style="padding:6px 14px;font-size:0.8rem;" onclick="cargarTickets()">🔄 Actualizar</button>
+          </div>
+        </div>
+
+        <div class="tickets-stats">
+          <div class="ticket-stat" onclick="filtrarTicketsPorEstado('')">
+            <div class="ticket-stat-num" id="tstat-total">—</div>
+            <div class="ticket-stat-label">Total</div>
+          </div>
+          <div class="ticket-stat" onclick="filtrarTicketsPorEstado('Nuevo')">
+            <div class="ticket-stat-num" id="tstat-nuevo" style="color:#e74c3c;">—</div>
+            <div class="ticket-stat-label">Nuevos</div>
+          </div>
+          <div class="ticket-stat" onclick="filtrarTicketsPorEstado('Asignado')">
+            <div class="ticket-stat-num" id="tstat-asignado" style="color:#f39c12;">—</div>
+            <div class="ticket-stat-label">Asignados</div>
+          </div>
+          <div class="ticket-stat" onclick="filtrarTicketsPorEstado('En Atención')">
+            <div class="ticket-stat-num" id="tstat-atencion" style="color:#3498db;">—</div>
+            <div class="ticket-stat-label">En Atención</div>
+          </div>
+          <div class="ticket-stat" onclick="filtrarTicketsPorEstado('Resuelto')">
+            <div class="ticket-stat-num" id="tstat-resuelto" style="color:#27ae60;">—</div>
+            <div class="ticket-stat-label">Resueltos</div>
+          </div>
+        </div>
+
+        <div class="tickets-table-wrap">
+          <div id="ticketsTabla"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== REPORTES ==================== -->
 <div id="reportes" class="tab-content">
   <div class="content-header" style="display:flex; align-items:center; justify-content:space-between; padding:18px 30px;">
@@ -2434,6 +2629,8 @@ onmouseout="this.style.transform='scale(1)'">💬</button>
 
   var _nextId = 10;
   function genId() { return 'MANT-' + String(++_nextId).padStart(3,'0'); }
+  var _nextTicketId = 5;
+  function genTicketId() { return 'TKT-' + String(++_nextTicketId).padStart(4,'0'); }
 
   var _equipos = [
     { nombre_pc:'PC-ADM-001', numero_ip:'192.168.1.10', unidad:'Administración', oficina:'Oficina Central', area:'Gerencia', usuario:'Juan Pérez', cod_patrimonio:'PAT-001', fecha_adq:'2021-03-15', n2:'', marca_cpu:'HP', modelo_cpu:'ProDesk 400 G6', serie_cpu:'SN-HP-001', estado_cpu:'Bueno', marca_mb:'HP', modelo_mb:'8169', marca_proc:'Intel', procesador:'Core i5-10500', velocidad_proc:'3.1GHz', gen_proc:'10ma', tipo_mem:'DDR4', total_mem:'16', marca_disco:'Seagate', cap_disco:'500GB', modelo_disco:'Barracuda', tipo_disco:'HDD', marca_tvideo:'Intel', modelo_tvideo:'UHD 630', marca_dvd:'LG', tipo_dvd:'DVD-RW', velocidad_grabadora:'24x', marca_teclado:'HP', modelo_teclado:'KB120', serie_teclado:'TC-001', cod_teclado:'PAT-TEC-001', estado_teclado:'Bueno', marca_mouse:'HP', modelo_mouse:'MS110', serie_mouse:'MS-001', estado_mouse:'Bueno', marca_monitor:'LG', tipo_monitor:'LED', modelo_monitor:'24MP400', pulgadas_monitor:'24', serie_monitor:'MON-001', cod_monitor:'PAT-MON-001', estado_monitor:'Bueno', marca_estab:'COMSOL', modelo_estab:'GS-500', serie_estab:'EST-001', cod_estab:'PAT-EST-001', estado_estab:'Bueno', nombre_so:'Windows 10 Pro', num_so:'LIC-001', key_so:'XXXXX-XXXXX-XXXXX', software_oficina:'Office 2019', key_software_oficina:'OFF-001', internet:'Sí', antivirus:'ESET NOD32', fecha_registro:'15/03/2021' },
@@ -2599,8 +2796,38 @@ onmouseout="this.style.transform='scale(1)'">💬</button>
       if (idx===-1) return 'Impresora no encontrada.';
       _impresoras.splice(idx,1);
       return 'Impresora eliminada correctamente.';
+    },
+    obtenerTicketsCached: function() { return _tickets.slice(); },
+    registrarTicket: function(t) {
+      t.id_ticket = genTicketId();
+      t.estado = 'Nuevo';
+      t.tecnico = '';
+      t.fecha_registro = new Date().toLocaleString('es-PE');
+      t.origen = t.origen || 'Manual';
+      _tickets.unshift(t);
+      return 'Ticket registrado correctamente.';
+    },
+    actualizarTicket: function(t) {
+      var idx = _tickets.findIndex(function(x){return x.id_ticket===t.id_ticket;});
+      if (idx===-1) return 'Ticket no encontrado.';
+      _tickets[idx] = Object.assign(_tickets[idx], t);
+      return 'Ticket actualizado correctamente.';
+    },
+    eliminarTicket: function(id) {
+      var idx = _tickets.findIndex(function(x){return x.id_ticket===id;});
+      if (idx===-1) return 'Ticket no encontrado.';
+      _tickets.splice(idx,1);
+      return 'Ticket eliminado correctamente.';
     }
   };
+
+  var _tickets = [
+    { id_ticket:'TKT-0001', usuario:'Juan Pérez', area:'Gerencia', equipo:'PC-ADM-001', problema:'La impresora no imprime, aparece error de conexión', prioridad:'Alta', estado:'Nuevo', tecnico:'', fecha_registro:'16/04/2026 08:15', origen:'Correo' },
+    { id_ticket:'TKT-0002', usuario:'María López', area:'Laboratorio', equipo:'PC-LAB-001', problema:'El sistema de laboratorio se cierra solo cada cierto tiempo', prioridad:'Media', estado:'Asignado', tecnico:'José Flores', fecha_registro:'16/04/2026 09:30', origen:'Formulario' },
+    { id_ticket:'TKT-0003', usuario:'Carlos Ramos', area:'Urgencias', equipo:'PC-EMG-001', problema:'La PC no enciende desde esta mañana, urge atención', prioridad:'Urgente', estado:'En Atención', tecnico:'Rosa Mamani', fecha_registro:'16/04/2026 10:05', origen:'Correo' },
+    { id_ticket:'TKT-0004', usuario:'Ana Torres', area:'Recursos Humanos', equipo:'PC-RH-001', problema:'Necesito instalar el software de planillas SAP', prioridad:'Baja', estado:'Resuelto', tecnico:'José Flores', fecha_registro:'15/04/2026 14:00', origen:'Manual' },
+    { id_ticket:'TKT-0005', usuario:'Luis Soto', area:'Contabilidad', equipo:'PC-CON-001', problema:'El teclado no responde, algunas teclas se quedaron pegadas', prioridad:'Media', estado:'Nuevo', tecnico:'', fecha_registro:'16/04/2026 11:20', origen:'Formulario' }
+  ];
 
   window.google = {
     script: {
@@ -3141,6 +3368,7 @@ onmouseout="this.style.transform='scale(1)'">💬</button>
     if (tabName === 'mantenimiento') { cargarMantenimientos(); cargarEquiposEnSelectores();calInit();}
     if (tabName === 'registroImpresora') cargarListasImpresoras();
     if (tabName === 'inventarioImpresora') cargarInventarioImpresoras();
+    if (tabName === 'tickets') cargarTickets();
   }
 
   // =========================================================
@@ -4627,6 +4855,274 @@ if (!respuesta || respuesta.trim() === '') {
 }
 
 
+
+// =========================================================
+//  MÓDULO TICKETS
+// =========================================================
+
+var _ticketsData = [];
+var _ticketsFiltrado = [];
+
+function cargarTickets() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      _ticketsData = data;
+      _ticketsFiltrado = data;
+      actualizarStatsTickets(data);
+      renderInboxTickets(data);
+      renderTablaTickets(data);
+      actualizarBadgeTickets(data);
+    })
+    .withFailureHandler(function(err) {
+      showMessage('msgTickets', 'Error al cargar tickets: ' + err, 'error');
+    })
+    .obtenerTicketsCached();
+}
+
+function actualizarBadgeTickets(data) {
+  var nuevos = data.filter(function(t){ return t.estado === 'Nuevo'; }).length;
+  var badge = document.getElementById('ticketBadge');
+  if (!badge) return;
+  if (nuevos > 0) { badge.textContent = nuevos; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+}
+
+function actualizarStatsTickets(data) {
+  document.getElementById('tstat-total').textContent    = data.length;
+  document.getElementById('tstat-nuevo').textContent    = data.filter(function(t){return t.estado==='Nuevo';}).length;
+  document.getElementById('tstat-asignado').textContent = data.filter(function(t){return t.estado==='Asignado';}).length;
+  document.getElementById('tstat-atencion').textContent = data.filter(function(t){return t.estado==='En Atención';}).length;
+  document.getElementById('tstat-resuelto').textContent = data.filter(function(t){return t.estado==='Resuelto';}).length;
+  var inboxCount = document.getElementById('inboxCount');
+  if (inboxCount) inboxCount.textContent = data.length + ' tickets';
+}
+
+function renderInboxTickets(lista) {
+  var cont = document.getElementById('ticketsInboxList');
+  if (!lista || lista.length === 0) {
+    cont.innerHTML = '<div style="text-align:center;color:#aaa;font-size:0.82rem;padding:30px 0;">No hay tickets en la bandeja.</div>';
+    return;
+  }
+  var origenIcon = { 'Correo': '📧', 'Formulario': '📝', 'Manual': '✏️' };
+  cont.innerHTML = lista.map(function(t, idx) {
+    var cssEstado = t.estado === 'Nuevo' ? 'nuevo' : t.estado === 'Asignado' ? 'asignado' : t.estado === 'En Atención' ? 'en-atencion' : 'resuelto';
+    return '<div class="ticket-card ' + cssEstado + '" onclick="abrirModalAsignar(' + idx + ')">' +
+      '<div class="ticket-card-top">' +
+        '<span class="ticket-card-usuario">👤 ' + (t.usuario||'') + '</span>' +
+        '<span class="ticket-card-hora">' + (t.fecha_registro||'').split(' ')[1] + '</span>' +
+      '</div>' +
+      '<div class="ticket-card-equipo">🖥️ ' + (t.equipo||'—') + ' &nbsp;·&nbsp; ' + (t.area||'') + '</div>' +
+      '<div class="ticket-card-problema">' + (t.problema||'') + '</div>' +
+      '<div class="ticket-card-origen">' +
+        (origenIcon[t.origen]||'📋') + ' ' + (t.origen||'') +
+        '&nbsp;&nbsp;<span class="badge ' + _ticketBadgeClass(t.estado) + '" style="font-size:0.65rem;padding:2px 7px;">' + t.estado + '</span>' +
+        (t.prioridad === 'Urgente' ? '&nbsp;<span style="background:#fde8e8;color:#c0392b;border-radius:4px;padding:1px 6px;font-size:0.65rem;font-weight:700;">⚡ URGENTE</span>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function _ticketBadgeClass(estado) {
+  if (estado === 'Nuevo') return 'ticket-badge-nuevo';
+  if (estado === 'Asignado') return 'ticket-badge-asignado';
+  if (estado === 'En Atención') return 'ticket-badge-en-atencion';
+  if (estado === 'Resuelto') return 'ticket-badge-resuelto';
+  return '';
+}
+
+function renderTablaTickets(lista) {
+  var cont = document.getElementById('ticketsTabla');
+  if (!lista || lista.length === 0) {
+    cont.innerHTML = '<div class="message warning">No hay tickets que mostrar.</div>';
+    return;
+  }
+  var prioridadColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' };
+  var html = '<table><thead><tr><th>ID</th><th>Usuario</th><th>Área</th><th>Equipo</th><th>Problema</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
+  lista.forEach(function(t, idx) {
+    var idxReal = _ticketsData.indexOf(t);
+    if (idxReal === -1) idxReal = _ticketsData.findIndex(function(x){return x.id_ticket===t.id_ticket;});
+    var pColor = prioridadColor[t.prioridad] || '#888';
+    html += '<tr>' +
+      '<td><strong>' + (t.id_ticket||'') + '</strong></td>' +
+      '<td>' + (t.usuario||'') + '</td>' +
+      '<td>' + (t.area||'') + '</td>' +
+      '<td>' + (t.equipo||'—') + '</td>' +
+      '<td style="max-width:180px;white-space:normal;font-size:0.8rem;">' + (t.problema||'') + '</td>' +
+      '<td><span style="background:' + pColor + '22;color:' + pColor + ';border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700;">' + (t.prioridad||'—') + '</span></td>' +
+      '<td><span class="badge ' + _ticketBadgeClass(t.estado) + '">' + (t.estado||'—') + '</span></td>' +
+      '<td>' + (t.tecnico||'<span style="color:#aaa;">Sin asignar</span>') + '</td>' +
+      '<td style="font-size:0.75rem;white-space:nowrap;">' + (t.fecha_registro||'') + '</td>' +
+      '<td style="white-space:nowrap;">' +
+        (t.estado !== 'Resuelto' ? '<button class="btn btn-info" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirModalAsignar(' + idxReal + ')">👤 Asignar</button> ' : '') +
+        '<button class="btn btn-danger" style="padding:3px 9px;font-size:0.74rem;" onclick="eliminarTicket(\'' + t.id_ticket + '\')">🗑️</button>' +
+      '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+function filtrarTicketsPorEstado(estado) {
+  _ticketsFiltrado = estado ? _ticketsData.filter(function(t){return t.estado===estado;}) : _ticketsData.slice();
+  renderInboxTickets(_ticketsFiltrado);
+  renderTablaTickets(_ticketsFiltrado);
+}
+
+function filtrarInbox() {
+  var txt = document.getElementById('filtroTicketsInbox').value.toLowerCase();
+  var base = _ticketsFiltrado.length ? _ticketsFiltrado : _ticketsData;
+  if (!txt) { renderInboxTickets(base); return; }
+  renderInboxTickets(base.filter(function(t){
+    return (t.usuario+t.area+t.equipo+t.problema+t.estado).toLowerCase().indexOf(txt) !== -1;
+  }));
+}
+
+function filtrarTablaTickets() {
+  var txt = document.getElementById('filtroTicketsTabla').value.toLowerCase();
+  if (!txt) { renderTablaTickets(_ticketsFiltrado.length ? _ticketsFiltrado : _ticketsData); return; }
+  renderTablaTickets((_ticketsFiltrado.length ? _ticketsFiltrado : _ticketsData).filter(function(t){
+    return (t.id_ticket+t.usuario+t.area+t.equipo+t.problema+t.estado+t.tecnico).toLowerCase().indexOf(txt) !== -1;
+  }));
+}
+
+function abrirModalAsignar(idx) {
+  var t = _ticketsData[idx];
+  if (!t) return;
+  var modal = document.getElementById('modalTicket');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalTicket';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  var prioridadColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' };
+  var pColor = prioridadColor[t.prioridad] || '#888';
+  var tecnicoOptions = ['José Flores','Rosa Mamani','Pedro Quispe','Luis Cárdenas'].map(function(n){
+    return '<option value="' + n + '"' + (t.tecnico===n?' selected':'') + '>' + n + '</option>';
+  }).join('');
+  var estadoOptions = ['Nuevo','Asignado','En Atención','Resuelto'].map(function(s){
+    return '<option value="' + s + '"' + (t.estado===s?' selected':'') + '>' + s + '</option>';
+  }).join('');
+  modal.innerHTML = '<div style="background:white;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;">' +
+    '<div style="background:#1C5F7B;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><strong style="font-size:1rem;">🎫 ' + t.id_ticket + '</strong><span style="margin-left:10px;background:' + pColor + '33;color:' + pColor + ';border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700;">' + t.prioridad + '</span></div>' +
+      '<button onclick="cerrarModalTicket()" style="background:none;border:none;color:white;font-size:1.3rem;cursor:pointer;">✖</button>' +
+    '</div>' +
+    '<div style="padding:20px 24px;">' +
+      '<div style="background:#F0F8FC;border-radius:8px;padding:12px 16px;margin-bottom:14px;">' +
+        '<div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:4px;">PROBLEMA REPORTADO</div>' +
+        '<div style="font-size:0.88rem;color:#333;">' + (t.problema||'') + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">USUARIO</div><div style="font-size:0.85rem;">👤 ' + (t.usuario||'') + '</div></div>' +
+        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">ÁREA</div><div style="font-size:0.85rem;">' + (t.area||'') + '</div></div>' +
+        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">EQUIPO</div><div style="font-size:0.85rem;">🖥️ ' + (t.equipo||'—') + '</div></div>' +
+        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">ORIGEN</div><div style="font-size:0.85rem;">' + (t.origen||'') + '</div></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Asignar Técnico</label><select id="tk_tecnico" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;"><option value="">-- Sin asignar --</option>' + tecnicoOptions + '</select></div>' +
+        '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Estado</label><select id="tk_estado" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;">' + estadoOptions + '</select></div>' +
+        '<div class="form-group" style="grid-column:1/-1;"><label style="font-size:0.78rem;font-weight:600;">Nota del técnico</label><textarea id="tk_nota" rows="2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;resize:vertical;">' + (t.nota_tecnico||'') + '</textarea></div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="padding:14px 24px;background:#F0F8FC;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #E5F2F7;">' +
+      '<button class="btn btn-secondary" onclick="cerrarModalTicket()">Cerrar</button>' +
+      '<button class="btn btn-success" onclick="guardarAsignacionTicket(\'' + t.id_ticket + '\')">💾 Guardar</button>' +
+    '</div>' +
+  '</div>';
+  modal.style.display = 'flex';
+}
+
+function guardarAsignacionTicket(id) {
+  var tecnico = document.getElementById('tk_tecnico').value;
+  var estado  = document.getElementById('tk_estado').value;
+  var nota    = document.getElementById('tk_nota').value;
+  var idx = _ticketsData.findIndex(function(t){return t.id_ticket===id;});
+  if (idx === -1) return;
+  var t = Object.assign({}, _ticketsData[idx], { tecnico: tecnico, estado: estado, nota_tecnico: nota });
+  google.script.run
+    .withSuccessHandler(function(msg) {
+      cerrarModalTicket();
+      cargarTickets();
+      showMessage('msgTickets', msg, 'success');
+    })
+    .withFailureHandler(function(err) { showMessage('msgTickets', 'Error: ' + err, 'error'); })
+    .actualizarTicket(t);
+}
+
+function cerrarModalTicket() {
+  var m = document.getElementById('modalTicket');
+  if (m) m.style.display = 'none';
+}
+
+function eliminarTicket(id) {
+  if (!confirm('¿Eliminar el ticket ' + id + '?\nEsta acción no se puede deshacer.')) return;
+  google.script.run
+    .withSuccessHandler(function(msg) { alert(msg); cargarTickets(); })
+    .withFailureHandler(function(err) { alert('Error: ' + err); })
+    .eliminarTicket(id);
+}
+
+function abrirModalNuevoTicket() {
+  var modal = document.getElementById('modalTicket');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalTicket';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  var equiposOpts = (_ticketsData.length ? [''] : ['']).concat(_equipos || []).map(function(e){
+    var nombre = typeof e === 'string' ? e : (e && e.nombre_pc ? e.nombre_pc : '');
+    return nombre ? '<option value="' + nombre + '">' + nombre + '</option>' : '<option value="">-- Seleccionar equipo --</option>';
+  }).join('');
+  modal.innerHTML = '<div style="background:white;border-radius:14px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;">' +
+    '<div style="background:#1C5F7B;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<strong style="font-size:1rem;">➕ Nuevo Ticket</strong>' +
+      '<button onclick="cerrarModalTicket()" style="background:none;border:none;color:white;font-size:1.3rem;cursor:pointer;">✖</button>' +
+    '</div>' +
+    '<div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+      '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Nombre del Usuario *</label><input id="nk_usuario" type="text" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;" placeholder="Ej: Juan Pérez"></div>' +
+      '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Área / Servicio *</label><input id="nk_area" type="text" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;" placeholder="Ej: Laboratorio"></div>' +
+      '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Equipo Afectado</label><select id="nk_equipo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;"><option value="">-- Sin equipo asignado --</option></select></div>' +
+      '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Prioridad</label><select id="nk_prioridad" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"><option>Media</option><option>Alta</option><option>Urgente</option><option>Baja</option></select></div>' +
+      '<div class="form-group" style="grid-column:1/-1;"><label style="font-size:0.78rem;font-weight:600;">Descripción del Problema *</label><textarea id="nk_problema" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;resize:vertical;" placeholder="Describa el problema detalladamente..."></textarea></div>' +
+    '</div>' +
+    '<div style="padding:14px 24px;background:#F0F8FC;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #E5F2F7;">' +
+      '<button class="btn btn-secondary" onclick="cerrarModalTicket()">Cancelar</button>' +
+      '<button class="btn btn-success" onclick="guardarNuevoTicket()">💾 Registrar Ticket</button>' +
+    '</div>' +
+  '</div>';
+  modal.style.display = 'flex';
+  google.script.run
+    .withSuccessHandler(function(nombres) {
+      var sel = document.getElementById('nk_equipo');
+      if (!sel) return;
+      nombres.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    }).obtenerEquiposParaSelector();
+}
+
+function guardarNuevoTicket() {
+  var usuario  = document.getElementById('nk_usuario').value.trim();
+  var area     = document.getElementById('nk_area').value.trim();
+  var problema = document.getElementById('nk_problema').value.trim();
+  if (!usuario || !area || !problema) { alert('Usuario, Área y Problema son obligatorios.'); return; }
+  var t = {
+    usuario: usuario,
+    area: area,
+    equipo: document.getElementById('nk_equipo').value,
+    prioridad: document.getElementById('nk_prioridad').value,
+    problema: problema,
+    origen: 'Manual'
+  };
+  google.script.run
+    .withSuccessHandler(function(msg) {
+      cerrarModalTicket();
+      cargarTickets();
+      showMessage('msgTickets', msg, 'success');
+    })
+    .withFailureHandler(function(err) { showMessage('msgTickets', 'Error: ' + err, 'error'); })
+    .registrarTicket(t);
+}
 
 // =========================================================
 //  MÓDULO IMPRESORAS JS
