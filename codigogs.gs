@@ -1005,6 +1005,116 @@ function obtenerDatosFormularioPorDni(dni) {
   }
 }
 
+function buscarUsuariosEquiposParaFormulario(query) {
+  try {
+    if (!query || query.toString().trim().length < 2) return [];
+
+    var cfg = _obtenerDatosEquiposFormulario();
+    if (!cfg) return [];
+
+    var q = _normalizarTextoComparacion(query);
+    var usuarios = {};
+    var resultado = [];
+
+    for (var i = 1; i < cfg.datos.length; i++) {
+      var fila = cfg.datos[i];
+      var usuario = (fila[cfg.idxUsuario] || '').toString().trim();
+      var usuarioNormalizado = _normalizarTextoComparacion(usuario);
+      var equipo = (fila[cfg.idxNombrePc] || '').toString().trim();
+
+      if (!usuario || !equipo || usuarioNormalizado.indexOf(q) === -1) continue;
+
+      if (!usuarios[usuarioNormalizado]) {
+        usuarios[usuarioNormalizado] = {
+          usuario: usuario,
+          unidad: fila[cfg.idxUnidad] || '',
+          oficina: fila[cfg.idxOficina] || '',
+          area: fila[cfg.idxArea] || '',
+          total_equipos: 0
+        };
+        resultado.push(usuarios[usuarioNormalizado]);
+      }
+      usuarios[usuarioNormalizado].total_equipos++;
+    }
+
+    return resultado.slice(0, 10);
+  } catch(err) {
+    throw new Error('Error al buscar usuarios en Equipos: ' + err.message);
+  }
+}
+
+function obtenerDatosFormularioPorUsuario(nombreUsuario) {
+  try {
+    if (!nombreUsuario || nombreUsuario.toString().trim().length < 2) {
+      return { usuario: null, equipos: [] };
+    }
+
+    var cfg = _obtenerDatosEquiposFormulario();
+    if (!cfg) return { usuario: null, equipos: [] };
+
+    var usuarioBuscado = _normalizarTextoComparacion(nombreUsuario);
+    var usuarioInfo = null;
+    var equipos = [];
+    var vistos = {};
+
+    for (var i = 1; i < cfg.datos.length; i++) {
+      var fila = cfg.datos[i];
+      var usuarioFila = (fila[cfg.idxUsuario] || '').toString().trim();
+      var usuarioFilaNormalizado = _normalizarTextoComparacion(usuarioFila);
+
+      if (usuarioFilaNormalizado !== usuarioBuscado) continue;
+
+      var nombreEquipo = (fila[cfg.idxNombrePc] || '').toString().trim();
+      if (!nombreEquipo || vistos[nombreEquipo]) continue;
+
+      vistos[nombreEquipo] = true;
+      if (!usuarioInfo) {
+        usuarioInfo = {
+          usuario: usuarioFila,
+          unidad: fila[cfg.idxUnidad] || '',
+          oficina: fila[cfg.idxOficina] || '',
+          area: fila[cfg.idxArea] || ''
+        };
+      }
+
+      equipos.push({
+        nombre_pc: nombreEquipo,
+        numero_ip: fila[cfg.idxIp] || '',
+        unidad: fila[cfg.idxUnidad] || '',
+        oficina: fila[cfg.idxOficina] || '',
+        area: fila[cfg.idxArea] || '',
+        cod_patrimonio: fila[cfg.idxPatrimonio] || ''
+      });
+    }
+
+    return { usuario: usuarioInfo, equipos: equipos };
+  } catch(err) {
+    throw new Error('Error al obtener equipos del usuario: ' + err.message);
+  }
+}
+
+function _obtenerDatosEquiposFormulario() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = ss.getSheetByName(HOJA_EQUIPOS);
+  if (!hoja || hoja.getLastRow() < 2) return null;
+
+  var datos = hoja.getDataRange().getValues();
+  var encabezados = datos[0].map(function(h) {
+    return _normalizarTextoComparacion(h || '');
+  });
+
+  return {
+    datos: datos,
+    idxNombrePc: _buscarIndiceEncabezado(encabezados, ['nombre pc', 'nombre_pc', 'equipo'], 0),
+    idxIp: _buscarIndiceEncabezado(encabezados, ['numero de ip', 'numero_ip', 'ip'], 1),
+    idxUnidad: _buscarIndiceEncabezado(encabezados, ['unidad'], 2),
+    idxOficina: _buscarIndiceEncabezado(encabezados, ['oficina'], 3),
+    idxArea: _buscarIndiceEncabezado(encabezados, ['area'], 4),
+    idxUsuario: _buscarIndiceEncabezado(encabezados, ['usuario', 'usuario(a)', 'user'], 5),
+    idxPatrimonio: _buscarIndiceEncabezado(encabezados, ['cod patrimonio', 'cod. patrimonio', 'cod_patrimonio', 'patrimonio'], 6)
+  };
+}
+
 function _buscarIndiceEncabezado(encabezados, posibles, fallback) {
   for (var i = 0; i < posibles.length; i++) {
     var idx = encabezados.indexOf(posibles[i]);
