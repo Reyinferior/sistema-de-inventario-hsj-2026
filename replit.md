@@ -21,7 +21,7 @@ The workflow "Start application" runs `node server.js`, serving `index.html` on 
 Note: The full app (with live data) must be deployed as a Google Apps Script Web App connected to a Google Sheets spreadsheet. In Replit, only the frontend UI is previewed statically — backend `google.script.run` calls won't function without the GAS environment.
 
 ## Formulario de Reporte
-The public form searches staff by DNI in the `Personal` sheet. After a DNI is selected, `codigogs.gs` reads the `Equipos` sheet and returns the equipment assigned to that DNI or matching user name. If one equipment item is found it is selected automatically; if multiple are found the user chooses the affected equipment.
+The public form searches staff by DNI in the `Personal` sheet. After a DNI is selected, `codigogs.gs` reads the `Equipos` sheet and returns the equipment whose `Usuario` value exactly matches the staff member's full name. If one equipment item is found it is selected automatically; if multiple are found the user chooses the affected equipment.
 
 ## External Libraries (CDN)
 - `xlsx.full.min.js` — Excel export

@@ -955,7 +955,7 @@ function obtenerDatosFormularioPorDni(dni) {
 
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var hojaEquipos = ss.getSheetByName(HOJA_EQUIPOS);
-    var nombrePersona = (persona.nombres_completos || '').toString().toLowerCase().trim();
+    var nombrePersona = _normalizarTextoComparacion(persona.nombres_completos || '');
     var equiposAsignados = [];
     var vistos = {};
 
@@ -966,7 +966,6 @@ function obtenerDatosFormularioPorDni(dni) {
       });
       var idxNombrePc = _buscarIndiceEncabezado(encabezadosEquipos, ['nombre pc', 'nombre_pc', 'equipo'], 0);
       var idxUsuario = _buscarIndiceEncabezado(encabezadosEquipos, ['usuario', 'usuario(a)', 'user'], 5);
-      var idxDni = _buscarIndiceEncabezado(encabezadosEquipos, ['dni', 'documento'], -1);
       var idxIp = _buscarIndiceEncabezado(encabezadosEquipos, ['número de ip', 'numero_ip', 'ip'], 1);
       var idxPatrimonio = _buscarIndiceEncabezado(encabezadosEquipos, ['cod. patrimonio', 'cod_patrimonio', 'patrimonio'], 6);
       var idxArea = _buscarIndiceEncabezado(encabezadosEquipos, ['área', 'area'], 4);
@@ -974,16 +973,9 @@ function obtenerDatosFormularioPorDni(dni) {
 
       for (var j = 1; j < datosEquipos.length; j++) {
         var fila = datosEquipos[j];
-        var usuarioEquipo = (fila[idxUsuario] || '').toString().toLowerCase().trim();
-        var dniEquipo = idxDni >= 0 ? (fila[idxDni] || '').toString().trim() : '';
-        var coincidePorDni = dniEquipo === dniBuscado || usuarioEquipo === dniBuscado.toLowerCase();
-        var coincidePorNombre = nombrePersona && usuarioEquipo === nombrePersona;
-        var coincideParcialNombre = nombrePersona && (
-          usuarioEquipo.indexOf(nombrePersona) !== -1 ||
-          nombrePersona.indexOf(usuarioEquipo) !== -1
-        );
+        var usuarioEquipo = _normalizarTextoComparacion(fila[idxUsuario] || '');
 
-        if (coincidePorDni || coincidePorNombre || coincideParcialNombre) {
+        if (nombrePersona && usuarioEquipo === nombrePersona) {
           var nombreEquipo = (fila[idxNombrePc] || '').toString().trim();
           if (nombreEquipo && !vistos[nombreEquipo]) {
             vistos[nombreEquipo] = true;
@@ -997,17 +989,6 @@ function obtenerDatosFormularioPorDni(dni) {
           }
         }
       }
-    }
-
-    var equipoPersonal = (persona.equipo_asignado || '').toString().trim();
-    if (equipoPersonal && !vistos[equipoPersonal]) {
-      equiposAsignados.push({
-        nombre_pc: equipoPersonal,
-        numero_ip: '',
-        cod_patrimonio: '',
-        area: persona.des_servicio || '',
-        oficina: ''
-      });
     }
 
     return {
@@ -1030,6 +1011,16 @@ function _buscarIndiceEncabezado(encabezados, posibles, fallback) {
     if (idx !== -1) return idx;
   }
   return fallback;
+}
+
+function _normalizarTextoComparacion(valor) {
+  return (valor || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 
