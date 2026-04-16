@@ -191,6 +191,34 @@
       font-weight: 600;
     }
     .btn-otro:hover { background: #2E86AB; }
+
+    .autocomplete-wrapper { position: relative; }
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1.5px solid #2E86AB;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .autocomplete-list.visible { display: block; }
+    .autocomplete-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: #EBF5FB; }
+    .autocomplete-item .item-cargo { font-size: 0.72rem; color: #888; margin-top: 1px; }
+    .field-auto { background: #EBF5FB !important; color: #1C5F7B !important; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -209,13 +237,20 @@
     <div class="mensaje" id="msgFormulario"></div>
 
     <div class="form-row">
-      <div class="form-group">
+      <div class="form-group" style="grid-column:1/-1;">
         <label>Nombre Completo *</label>
-        <input type="text" id="f_usuario" placeholder="Ej: Juan Pérez">
+        <div class="autocomplete-wrapper">
+          <input type="text" id="f_usuario" placeholder="Escriba su nombre para buscar..." autocomplete="off" oninput="buscarPersonal(this.value)">
+          <div class="autocomplete-list" id="f_usuario_lista"></div>
+        </div>
       </div>
       <div class="form-group">
         <label>Área / Servicio *</label>
         <input type="text" id="f_area" placeholder="Ej: Laboratorio">
+      </div>
+      <div class="form-group">
+        <label>Cargo</label>
+        <input type="text" id="f_cargo" placeholder="Se llena automáticamente" readonly style="background:#f8fbfd;">
       </div>
     </div>
 
@@ -268,6 +303,7 @@
 
 <script>
   var _prioridadSeleccionada = 'Media';
+  var _buscarTimer = null;
 
   function seleccionarPrioridad(valor, btn) {
     _prioridadSeleccionada = valor;
@@ -284,6 +320,79 @@
     el.textContent = texto;
   }
 
+  // ── Autocomplete de personal ──────────────────────────────────
+  function buscarPersonal(query) {
+    cerrarLista();
+    if (!query || query.length < 2) return;
+    clearTimeout(_buscarTimer);
+    _buscarTimer = setTimeout(function() {
+      if (typeof google !== 'undefined') {
+        google.script.run
+          .withSuccessHandler(mostrarSugerencias)
+          .withFailureHandler(function(){})
+          .buscarPersonalParaFormulario(query);
+      } else {
+        var demoPersonal = [
+          { nombres_completos:'Juan Pérez', des_servicio:'Gerencia', des_cargo:'Jefe de Área', equipo_asignado:'PC-ADM-001' },
+          { nombres_completos:'María López', des_servicio:'Laboratorio', des_cargo:'Analista', equipo_asignado:'PC-LAB-001' },
+          { nombres_completos:'Carlos Ramos', des_servicio:'Urgencias', des_cargo:'Técnico', equipo_asignado:'PC-EMG-001' },
+          { nombres_completos:'Ana Torres', des_servicio:'Recursos Humanos', des_cargo:'Asistente', equipo_asignado:'PC-RH-001' },
+          { nombres_completos:'Luis Soto', des_servicio:'Contabilidad', des_cargo:'Contador', equipo_asignado:'PC-CON-001' }
+        ];
+        var q = query.toLowerCase();
+        mostrarSugerencias(demoPersonal.filter(function(p){
+          return p.nombres_completos.toLowerCase().indexOf(q) !== -1;
+        }));
+      }
+    }, 300);
+  }
+
+  function mostrarSugerencias(resultados) {
+    var lista = document.getElementById('f_usuario_lista');
+    lista.innerHTML = '';
+    if (!resultados || resultados.length === 0) { cerrarLista(); return; }
+    resultados.forEach(function(p) {
+      var item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.innerHTML = '<div>' + p.nombres_completos + '</div>' +
+                       '<div class="item-cargo">' + (p.des_cargo || '') + ' — ' + (p.des_servicio || '') + '</div>';
+      item.onclick = function() { seleccionarPersona(p); };
+      lista.appendChild(item);
+    });
+    lista.classList.add('visible');
+  }
+
+  function seleccionarPersona(p) {
+    document.getElementById('f_usuario').value = p.nombres_completos;
+    document.getElementById('f_area').value    = p.des_servicio || '';
+    document.getElementById('f_cargo').value   = p.des_cargo    || '';
+    document.getElementById('f_area').classList.add('field-auto');
+    document.getElementById('f_cargo').classList.add('field-auto');
+    if (p.equipo_asignado) {
+      var sel = document.getElementById('f_equipo');
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === p.equipo_asignado) { sel.selectedIndex = i; break; }
+      }
+      if (sel.value !== p.equipo_asignado) {
+        var opt = document.createElement('option');
+        opt.value = p.equipo_asignado; opt.textContent = p.equipo_asignado;
+        opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+    cerrarLista();
+  }
+
+  function cerrarLista() {
+    var lista = document.getElementById('f_usuario_lista');
+    if (lista) { lista.innerHTML = ''; lista.classList.remove('visible'); }
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.autocomplete-wrapper')) cerrarLista();
+  });
+
+  // ── Enviar formulario ─────────────────────────────────────────
   function enviarFormulario() {
     var usuario  = document.getElementById('f_usuario').value.trim();
     var area     = document.getElementById('f_area').value.trim();
@@ -321,7 +430,6 @@
         })
         .registrarTicket(ticket);
     } else {
-      // Modo demo local
       setTimeout(function() {
         document.getElementById('ticketIdGenerado').textContent = 'TKT-DEMO';
         document.getElementById('formSection').style.display = 'none';
@@ -331,10 +439,12 @@
   }
 
   function reiniciarFormulario() {
-    ['f_usuario','f_area','f_problema'].forEach(function(id){
-      document.getElementById(id).value = '';
+    ['f_usuario','f_area','f_cargo','f_problema'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('field-auto'); }
     });
     document.getElementById('f_equipo').value = '';
+    cerrarLista();
     seleccionarPrioridad('Media', document.querySelectorAll('.prioridad-btn')[1]);
     document.getElementById('msgFormulario').className = 'mensaje';
     document.getElementById('btnEnviar').disabled = false;
@@ -342,7 +452,7 @@
     document.getElementById('successSection').style.display = 'none';
   }
 
-  // Cargar equipos en el selector
+  // ── Cargar equipos en el selector ────────────────────────────
   if (typeof google !== 'undefined') {
     google.script.run
       .withSuccessHandler(function(nombres) {
@@ -355,7 +465,6 @@
       })
       .obtenerEquiposParaSelector();
   } else {
-    // Demo: agregar equipos de ejemplo
     var demoEquipos = ['PC-ADM-001','PC-LAB-001','PC-EMG-001','PC-RH-001','PC-CON-001'];
     var sel = document.getElementById('f_equipo');
     demoEquipos.forEach(function(n) {

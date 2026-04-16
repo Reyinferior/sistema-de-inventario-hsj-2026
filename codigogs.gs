@@ -952,6 +952,30 @@ function obtenerPersonalCached() {
   return data;
 }
 
+function buscarPersonalParaFormulario(query) {
+  try {
+    var personal = obtenerPersonalCached();
+    if (!query || query.toString().length < 2) return [];
+    var q = query.toString().toLowerCase();
+    return personal
+      .filter(function(p) {
+        return (p.nombres_completos || '').toLowerCase().indexOf(q) !== -1 ||
+               (p.dni || '').indexOf(q) !== -1;
+      })
+      .slice(0, 10)
+      .map(function(p) {
+        return {
+          nombres_completos: p.nombres_completos || '',
+          des_servicio:      p.des_servicio      || '',
+          des_cargo:         p.des_cargo         || '',
+          equipo_asignado:   p.equipo_asignado   || ''
+        };
+      });
+  } catch(err) {
+    throw new Error('Error al buscar personal: ' + err.message);
+  }
+}
+
 function obtenerEquiposCached() {
   var cache = CacheService.getScriptCache();
   var cached = cache.get('equipos_data');

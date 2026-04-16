@@ -4997,9 +4997,7 @@ function abrirModalAsignar(idx) {
   }
   var prioridadColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' };
   var pColor = prioridadColor[t.prioridad] || '#888';
-  var tecnicoOptions = ['José Flores','Rosa Mamani','Pedro Quispe','Luis Cárdenas'].map(function(n){
-    return '<option value="' + n + '"' + (t.tecnico===n?' selected':'') + '>' + n + '</option>';
-  }).join('');
+  var tecnicoOptions = '';
   var estadoOptions = ['Nuevo','Asignado','En Atención','Resuelto'].map(function(s){
     return '<option value="' + s + '"' + (t.estado===s?' selected':'') + '>' + s + '</option>';
   }).join('');
@@ -5031,6 +5029,29 @@ function abrirModalAsignar(idx) {
     '</div>' +
   '</div>';
   modal.style.display = 'flex';
+
+  var tecnicoActual = t.tecnico || '';
+  function _poblarTecnicosTicket(tecnicos) {
+    var sel = document.getElementById('tk_tecnico');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Sin asignar --</option>';
+    tecnicos.forEach(function(tc) {
+      var nombre = typeof tc === 'string' ? tc : (tc.nombre || '');
+      if (!nombre) return;
+      var opt = document.createElement('option');
+      opt.value = nombre; opt.textContent = nombre;
+      if (nombre === tecnicoActual) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+  if (typeof google !== 'undefined') {
+    google.script.run
+      .withSuccessHandler(_poblarTecnicosTicket)
+      .withFailureHandler(function(){})
+      .obtenerTecnicos();
+  } else {
+    _poblarTecnicosTicket(_DEMO.obtenerTecnicos ? _DEMO.obtenerTecnicos() : []);
+  }
 }
 
 function guardarAsignacionTicket(id) {
