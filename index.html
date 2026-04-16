@@ -4906,7 +4906,9 @@ function renderInboxTickets(lista) {
   var origenIcon = { 'Correo': '📧', 'Formulario': '📝', 'Manual': '✏️' };
   cont.innerHTML = lista.map(function(t, idx) {
     var cssEstado = t.estado === 'Nuevo' ? 'nuevo' : t.estado === 'Asignado' ? 'asignado' : t.estado === 'En Atención' ? 'en-atencion' : 'resuelto';
-    return '<div class="ticket-card ' + cssEstado + '" onclick="abrirModalAsignar(' + idx + ')">' +
+    var fasePorEstado = { 'Nuevo':'asignar', 'Asignado':'iniciar', 'En Atención':'resolver', 'Resuelto':'ver' };
+    var faseCard = fasePorEstado[t.estado] || 'ver';
+    return '<div class="ticket-card ' + cssEstado + '" onclick="abrirFaseTicket(' + idx + ',\'' + faseCard + '\')">' +
       '<div class="ticket-card-top">' +
         '<span class="ticket-card-usuario">👤 ' + (t.usuario||'') + '</span>' +
         '<span class="ticket-card-hora">' + (t.fecha_registro||'').split(' ')[1] + '</span>' +
@@ -4930,6 +4932,14 @@ function _ticketBadgeClass(estado) {
   return '';
 }
 
+function _fmtFecha(f) {
+  if (!f) return '—';
+  var s = f.toString().trim();
+  var partes = s.split(' ');
+  if (partes.length >= 2) return '<span style="display:block;font-size:0.78rem;">' + partes[0] + '</span><span style="font-size:0.7rem;color:#888;">' + partes[1] + '</span>';
+  return '<span style="font-size:0.78rem;">' + s + '</span>';
+}
+
 function renderTablaTickets(lista) {
   var cont = document.getElementById('ticketsTabla');
   if (!lista || lista.length === 0) {
@@ -4937,24 +4947,43 @@ function renderTablaTickets(lista) {
     return;
   }
   var prioridadColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' };
-  var html = '<table><thead><tr><th>ID</th><th>Usuario</th><th>Área</th><th>Equipo</th><th>Problema</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
-  lista.forEach(function(t, idx) {
-    var idxReal = _ticketsData.indexOf(t);
-    if (idxReal === -1) idxReal = _ticketsData.findIndex(function(x){return x.id_ticket===t.id_ticket;});
-    var pColor = prioridadColor[t.prioridad] || '#888';
+  var badgeEstilo = {
+    'Nuevo':       'background:#fff3cd;color:#856404;',
+    'Asignado':    'background:#d1ecf1;color:#0c5460;',
+    'En Atención': 'background:#fde8d8;color:#a04000;',
+    'Resuelto':    'background:#d4edda;color:#155724;'
+  };
+  var html = '<table><thead><tr><th>ID</th><th>Usuario</th><th>Área</th><th>Equipo</th><th>Problema</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Registrado</th><th>Acciones</th></tr></thead><tbody>';
+  lista.forEach(function(t) {
+    var idxReal = _ticketsData.findIndex(function(x){return x.id_ticket===t.id_ticket;});
+    var pColor  = prioridadColor[t.prioridad] || '#888';
+    var bStyle  = badgeEstilo[t.estado] || 'background:#eee;color:#555;';
+    var badge   = '<span class="badge" style="' + bStyle + '">' + (t.estado||'—') + '</span>';
+    var btnAccion = '';
+    if (idxReal >= 0) {
+      if (t.estado === 'Nuevo') {
+        btnAccion = '<button class="btn btn-info" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirFaseTicket(' + idxReal + ',\'asignar\')">👤 Asignar</button>';
+      } else if (t.estado === 'Asignado') {
+        btnAccion = '<button class="btn btn-warning" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirFaseTicket(' + idxReal + ',\'iniciar\')">▶️ Iniciar</button>';
+      } else if (t.estado === 'En Atención') {
+        btnAccion = '<button class="btn btn-success" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirFaseTicket(' + idxReal + ',\'resolver\')">✅ Resolver</button>';
+      } else if (t.estado === 'Resuelto') {
+        btnAccion = '<button class="btn btn-secondary" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirFaseTicket(' + idxReal + ',\'ver\')">👁️ Ver</button>';
+      }
+    }
     html += '<tr>' +
       '<td><strong>' + (t.id_ticket||'') + '</strong></td>' +
       '<td>' + (t.usuario||'') + '</td>' +
       '<td>' + (t.area||'') + '</td>' +
       '<td>' + (t.equipo||'—') + '</td>' +
-      '<td style="max-width:180px;white-space:normal;font-size:0.8rem;">' + (t.problema||'') + '</td>' +
-      '<td><span style="background:' + pColor + '22;color:' + pColor + ';border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700;">' + (t.prioridad||'—') + '</span></td>' +
-      '<td><span class="badge ' + _ticketBadgeClass(t.estado) + '">' + (t.estado||'—') + '</span></td>' +
-      '<td>' + (t.tecnico||'<span style="color:#aaa;">Sin asignar</span>') + '</td>' +
-      '<td style="font-size:0.75rem;white-space:nowrap;">' + (t.fecha_registro||'') + '</td>' +
+      '<td style="max-width:160px;white-space:normal;font-size:0.8rem;">' + (t.problema||'') + '</td>' +
+      '<td><span style="background:' + pColor + '22;color:' + pColor + ';border-radius:4px;padding:2px 8px;font-size:0.74rem;font-weight:700;">' + (t.prioridad||'—') + '</span></td>' +
+      '<td>' + badge + '</td>' +
+      '<td>' + (t.tecnico || '<span style="color:#aaa;font-size:0.78rem;">Sin asignar</span>') + '</td>' +
+      '<td>' + _fmtFecha(t.fecha_registro) + '</td>' +
       '<td style="white-space:nowrap;">' +
-        (t.estado !== 'Resuelto' ? '<button class="btn btn-info" style="padding:3px 9px;font-size:0.74rem;" onclick="abrirModalAsignar(' + idxReal + ')">👤 Asignar</button> ' : '') +
-        '<button class="btn btn-danger" style="padding:3px 9px;font-size:0.74rem;" onclick="eliminarTicket(\'' + t.id_ticket + '\')">🗑️</button>' +
+        btnAccion +
+        ' <button class="btn btn-danger" style="padding:3px 9px;font-size:0.74rem;" onclick="eliminarTicket(\'' + t.id_ticket + '\')">🗑️</button>' +
       '</td>' +
     '</tr>';
   });
@@ -4985,9 +5014,24 @@ function filtrarTablaTickets() {
   }));
 }
 
-function abrirModalAsignar(idx) {
+function _tkInfo(t) {
+  var pColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' }[t.prioridad] || '#888';
+  return '<div style="background:#F0F8FC;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.83rem;">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+    '<div><span style="font-size:0.68rem;font-weight:700;color:#2E86AB;">USUARIO</span><br>👤 ' + (t.usuario||'—') + '</div>' +
+    '<div><span style="font-size:0.68rem;font-weight:700;color:#2E86AB;">ÁREA</span><br>' + (t.area||'—') + '</div>' +
+    '<div><span style="font-size:0.68rem;font-weight:700;color:#2E86AB;">EQUIPO</span><br>🖥️ ' + (t.equipo||'—') + '</div>' +
+    '<div><span style="font-size:0.68rem;font-weight:700;color:#2E86AB;">PRIORIDAD</span><br>' +
+      '<span style="background:' + pColor + '22;color:' + pColor + ';border-radius:4px;padding:1px 7px;font-size:0.74rem;font-weight:700;">' + (t.prioridad||'—') + '</span></div>' +
+    '</div>' +
+    '<div style="margin-top:8px;"><span style="font-size:0.68rem;font-weight:700;color:#2E86AB;">PROBLEMA</span><br>' + (t.problema||'—') + '</div>' +
+  '</div>';
+}
+
+function abrirFaseTicket(idx, fase) {
   var t = _ticketsData[idx];
   if (!t) return;
+  window._tkFaseActual = t;
   var modal = document.getElementById('modalTicket');
   if (!modal) {
     modal = document.createElement('div');
@@ -4995,72 +5039,96 @@ function abrirModalAsignar(idx) {
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
     document.body.appendChild(modal);
   }
-  var prioridadColor = { 'Urgente':'#e74c3c', 'Alta':'#e67e22', 'Media':'#3498db', 'Baja':'#27ae60' };
-  var pColor = prioridadColor[t.prioridad] || '#888';
-  var tecnicoOptions = '';
-  var estadoOptions = ['Nuevo','Asignado','En Atención','Resuelto'].map(function(s){
-    return '<option value="' + s + '"' + (t.estado===s?' selected':'') + '>' + s + '</option>';
-  }).join('');
-  modal.innerHTML = '<div style="background:white;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;">' +
+
+  var titulos = { asignar:'👤 Asignar Ticket', iniciar:'▶️ Iniciar Atención', resolver:'✅ Resolver Ticket', ver:'👁️ Detalle del Ticket' };
+  var titulo = titulos[fase] || '🎫 Ticket';
+  var contenido = '';
+
+  if (fase === 'asignar') {
+    contenido = '<div class="form-grid">' +
+      '<div class="form-group"><label>Técnico Responsable *</label><select id="tk_tecnico" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;"><option value="">-- seleccionar --</option></select></div>' +
+      '<div class="form-group"><label>Prioridad</label><select id="tk_prioridad" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;">' +
+        ['Baja','Media','Alta','Urgente'].map(function(p){ return '<option' + (t.prioridad===p?' selected':'') + '>' + p + '</option>'; }).join('') +
+      '</select></div>' +
+    '</div>';
+  } else if (fase === 'iniciar') {
+    contenido = '<div class="form-grid">' +
+      '<div class="form-group"><label>Técnico Asignado</label><input type="text" value="' + (t.tecnico||'—') + '" readonly style="background:#f0f0f0;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>' +
+      '<div class="form-group"><label>Acción</label><input type="text" value="El estado pasará a En Atención" readonly style="background:#f0f0f0;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>' +
+    '</div>';
+  } else if (fase === 'resolver') {
+    contenido = '<div class="form-grid">' +
+      '<div class="form-group"><label>Técnico</label><input type="text" value="' + (t.tecnico||'—') + '" readonly style="background:#f0f0f0;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>' +
+      '<div class="form-group"><label>Fecha Atención</label><input type="text" value="' + new Date().toLocaleDateString('es-PE') + '" readonly style="background:#f0f0f0;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></div>' +
+      '<div class="form-group wide"><label>Nota / Solución *</label><textarea id="tk_nota" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;resize:vertical;" placeholder="Describa la solución aplicada...">' + (t.nota_tecnico||'') + '</textarea></div>' +
+    '</div>';
+  } else if (fase === 'ver') {
+    var campos = [['ID Ticket', t.id_ticket],['Usuario',t.usuario],['Área',t.area],['Equipo',t.equipo||'—'],
+      ['Prioridad',t.prioridad],['Estado',t.estado],['Técnico',t.tecnico||'Sin asignar'],
+      ['Problema',t.problema],['Nota / Solución',t.nota_tecnico||'—'],
+      ['Registrado',t.fecha_registro],['Actualizado',t.fecha_actualizacion||'—'],['Origen',t.origen]];
+    contenido = '<div class="form-grid">' + campos.map(function(c){
+      return '<div class="form-group' + (c[0]==='Problema'||c[0]==='Nota / Solución'?' wide':'') + '">' +
+        '<label>' + c[0] + '</label>' +
+        '<div style="padding:8px;background:#f8f9fa;border-radius:6px;border:1px solid #e0e0e0;font-size:0.85rem;min-height:34px;">' + (c[1]||'—') + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  var btnGuardar = fase !== 'ver' ?
+    '<button class="btn btn-success" onclick="guardarFaseTicket(\'' + t.id_ticket + '\',\'' + fase + '\')">💾 ' +
+    (fase==='asignar'?'Asignar':fase==='iniciar'?'Iniciar':fase==='resolver'?'Marcar Resuelto':'Guardar') + '</button>' : '';
+
+  modal.innerHTML = '<div style="background:white;border-radius:14px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;">' +
     '<div style="background:#1C5F7B;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;">' +
-      '<div><strong style="font-size:1rem;">🎫 ' + t.id_ticket + '</strong><span style="margin-left:10px;background:' + pColor + '33;color:' + pColor + ';border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700;">' + t.prioridad + '</span></div>' +
+      '<div><strong style="font-size:1rem;">' + titulo + '</strong> <span style="font-size:0.78rem;opacity:0.8;">' + (t.id_ticket||'') + '</span></div>' +
       '<button onclick="cerrarModalTicket()" style="background:none;border:none;color:white;font-size:1.3rem;cursor:pointer;">✖</button>' +
     '</div>' +
-    '<div style="padding:20px 24px;">' +
-      '<div style="background:#F0F8FC;border-radius:8px;padding:12px 16px;margin-bottom:14px;">' +
-        '<div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:4px;">PROBLEMA REPORTADO</div>' +
-        '<div style="font-size:0.88rem;color:#333;">' + (t.problema||'') + '</div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">USUARIO</div><div style="font-size:0.85rem;">👤 ' + (t.usuario||'') + '</div></div>' +
-        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">ÁREA</div><div style="font-size:0.85rem;">' + (t.area||'') + '</div></div>' +
-        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">EQUIPO</div><div style="font-size:0.85rem;">🖥️ ' + (t.equipo||'—') + '</div></div>' +
-        '<div><div style="font-size:0.7rem;font-weight:700;color:#2E86AB;margin-bottom:3px;">ORIGEN</div><div style="font-size:0.85rem;">' + (t.origen||'') + '</div></div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-        '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Asignar Técnico</label><select id="tk_tecnico" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;"><option value="">-- Sin asignar --</option>' + tecnicoOptions + '</select></div>' +
-        '<div class="form-group"><label style="font-size:0.78rem;font-weight:600;">Estado</label><select id="tk_estado" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;">' + estadoOptions + '</select></div>' +
-        '<div class="form-group" style="grid-column:1/-1;"><label style="font-size:0.78rem;font-weight:600;">Nota del técnico</label><textarea id="tk_nota" rows="2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:0.83rem;resize:vertical;">' + (t.nota_tecnico||'') + '</textarea></div>' +
-      '</div>' +
-    '</div>' +
-    '<div style="padding:14px 24px;background:#F0F8FC;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #E5F2F7;">' +
-      '<button class="btn btn-secondary" onclick="cerrarModalTicket()">Cerrar</button>' +
-      '<button class="btn btn-success" onclick="guardarAsignacionTicket(\'' + t.id_ticket + '\')">💾 Guardar</button>' +
+    '<div style="padding:18px 24px;">' + _tkInfo(t) + contenido + '</div>' +
+    '<div style="padding:12px 24px;background:#F0F8FC;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid #E5F2F7;">' +
+      '<button class="btn btn-secondary" onclick="cerrarModalTicket()">Cerrar</button>' + btnGuardar +
     '</div>' +
   '</div>';
   modal.style.display = 'flex';
 
-  var tecnicoActual = t.tecnico || '';
-  function _poblarTecnicosTicket(tecnicos) {
-    var sel = document.getElementById('tk_tecnico');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">-- Sin asignar --</option>';
-    tecnicos.forEach(function(tc) {
-      var nombre = typeof tc === 'string' ? tc : (tc.nombre || '');
-      if (!nombre) return;
-      var opt = document.createElement('option');
-      opt.value = nombre; opt.textContent = nombre;
-      if (nombre === tecnicoActual) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
-  if (typeof google !== 'undefined') {
+  if (fase === 'asignar') {
+    var tecnicoActual = t.tecnico || '';
+    function _poblarTknTicket(tecnicos) {
+      var sel = document.getElementById('tk_tecnico');
+      if (!sel) return;
+      tecnicos.forEach(function(tc) {
+        var nombre = typeof tc === 'string' ? tc : (tc.nombre || '');
+        if (!nombre) return;
+        var opt = document.createElement('option');
+        opt.value = nombre; opt.textContent = nombre;
+        if (nombre === tecnicoActual) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
     google.script.run
-      .withSuccessHandler(_poblarTecnicosTicket)
+      .withSuccessHandler(_poblarTknTicket)
       .withFailureHandler(function(){})
       .obtenerTecnicos();
-  } else {
-    _poblarTecnicosTicket(_DEMO.obtenerTecnicos ? _DEMO.obtenerTecnicos() : []);
   }
 }
 
-function guardarAsignacionTicket(id) {
-  var tecnico = document.getElementById('tk_tecnico').value;
-  var estado  = document.getElementById('tk_estado').value;
-  var nota    = document.getElementById('tk_nota').value;
+function guardarFaseTicket(id, fase) {
   var idx = _ticketsData.findIndex(function(t){return t.id_ticket===id;});
   if (idx === -1) return;
-  var t = Object.assign({}, _ticketsData[idx], { tecnico: tecnico, estado: estado, nota_tecnico: nota });
+  var t = Object.assign({}, _ticketsData[idx]);
+
+  if (fase === 'asignar') {
+    var tec = document.getElementById('tk_tecnico').value;
+    var pri = document.getElementById('tk_prioridad').value;
+    if (!tec) { alert('Seleccione un técnico.'); return; }
+    t.tecnico = tec; t.prioridad = pri; t.estado = 'Asignado';
+  } else if (fase === 'iniciar') {
+    t.estado = 'En Atención';
+  } else if (fase === 'resolver') {
+    var nota = document.getElementById('tk_nota').value.trim();
+    if (!nota) { alert('Ingrese la nota o solución aplicada.'); return; }
+    t.nota_tecnico = nota; t.estado = 'Resuelto';
+  }
+
   google.script.run
     .withSuccessHandler(function(msg) {
       cerrarModalTicket();
