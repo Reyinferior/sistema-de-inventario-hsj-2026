@@ -962,7 +962,7 @@ function obtenerDatosFormularioPorDni(dni) {
     if (hojaEquipos && hojaEquipos.getLastRow() >= 2) {
       var datosEquipos = hojaEquipos.getDataRange().getValues();
       var encabezadosEquipos = datosEquipos[0].map(function(h) {
-        return (h || '').toString().toLowerCase().trim();
+        return _normalizarTextoComparacion(h || '');
       });
       var idxNombrePc = _buscarIndiceEncabezado(encabezadosEquipos, ['nombre pc', 'nombre_pc', 'equipo'], 0);
       var idxUsuario = _buscarIndiceEncabezado(encabezadosEquipos, ['usuario', 'usuario(a)', 'user'], 5);
@@ -975,7 +975,7 @@ function obtenerDatosFormularioPorDni(dni) {
         var fila = datosEquipos[j];
         var usuarioEquipo = _normalizarTextoComparacion(fila[idxUsuario] || '');
 
-        if (nombrePersona && usuarioEquipo === nombrePersona) {
+        if (_coincideUsuarioConPersona(usuarioEquipo, nombrePersona)) {
           var nombreEquipo = (fila[idxNombrePc] || '').toString().trim();
           if (nombreEquipo && !vistos[nombreEquipo]) {
             vistos[nombreEquipo] = true;
@@ -1021,6 +1021,32 @@ function _normalizarTextoComparacion(valor) {
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+}
+
+function _coincideUsuarioConPersona(usuarioEquipo, nombrePersona) {
+  if (!usuarioEquipo || !nombrePersona) return false;
+  if (usuarioEquipo === nombrePersona) return true;
+  if (usuarioEquipo.indexOf(nombrePersona) !== -1 || nombrePersona.indexOf(usuarioEquipo) !== -1) return true;
+
+  var tokensPersona = nombrePersona.split(' ').filter(function(t) { return t.length >= 3; });
+  var tokensUsuario = usuarioEquipo.split(' ').filter(function(t) { return t.length >= 3; });
+
+  if (tokensPersona.length >= 2) {
+    var encontradosPersona = tokensPersona.filter(function(t) {
+      return tokensUsuario.indexOf(t) !== -1;
+    }).length;
+    if (encontradosPersona === tokensPersona.length) return true;
+    if (tokensPersona.length >= 4 && encontradosPersona >= tokensPersona.length - 1) return true;
+  }
+
+  if (tokensUsuario.length >= 2) {
+    var encontradosUsuario = tokensUsuario.filter(function(t) {
+      return tokensPersona.indexOf(t) !== -1;
+    }).length;
+    if (encontradosUsuario === tokensUsuario.length) return true;
+  }
+
+  return false;
 }
 
 
