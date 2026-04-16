@@ -2426,6 +2426,214 @@ onmouseout="this.style.transform='scale(1)'">💬</button>
 
 
 <script>
+// =========================================================
+//  MODO DEMO — Stub de google.script.run para pruebas locales
+// =========================================================
+(function() {
+  if (typeof google !== 'undefined') return;
+
+  var _nextId = 10;
+  function genId() { return 'MANT-' + String(++_nextId).padStart(3,'0'); }
+
+  var _equipos = [
+    { nombre_pc:'PC-ADM-001', numero_ip:'192.168.1.10', unidad:'Administración', oficina:'Oficina Central', area:'Gerencia', usuario:'Juan Pérez', cod_patrimonio:'PAT-001', fecha_adq:'2021-03-15', n2:'', marca_cpu:'HP', modelo_cpu:'ProDesk 400 G6', serie_cpu:'SN-HP-001', estado_cpu:'Bueno', marca_mb:'HP', modelo_mb:'8169', marca_proc:'Intel', procesador:'Core i5-10500', velocidad_proc:'3.1GHz', gen_proc:'10ma', tipo_mem:'DDR4', total_mem:'16', marca_disco:'Seagate', cap_disco:'500GB', modelo_disco:'Barracuda', tipo_disco:'HDD', marca_tvideo:'Intel', modelo_tvideo:'UHD 630', marca_dvd:'LG', tipo_dvd:'DVD-RW', velocidad_grabadora:'24x', marca_teclado:'HP', modelo_teclado:'KB120', serie_teclado:'TC-001', cod_teclado:'PAT-TEC-001', estado_teclado:'Bueno', marca_mouse:'HP', modelo_mouse:'MS110', serie_mouse:'MS-001', estado_mouse:'Bueno', marca_monitor:'LG', tipo_monitor:'LED', modelo_monitor:'24MP400', pulgadas_monitor:'24', serie_monitor:'MON-001', cod_monitor:'PAT-MON-001', estado_monitor:'Bueno', marca_estab:'COMSOL', modelo_estab:'GS-500', serie_estab:'EST-001', cod_estab:'PAT-EST-001', estado_estab:'Bueno', nombre_so:'Windows 10 Pro', num_so:'LIC-001', key_so:'XXXXX-XXXXX-XXXXX', software_oficina:'Office 2019', key_software_oficina:'OFF-001', internet:'Sí', antivirus:'ESET NOD32', fecha_registro:'15/03/2021' },
+    { nombre_pc:'PC-LAB-001', numero_ip:'192.168.1.20', unidad:'Laboratorio', oficina:'Lab Clínico', area:'Análisis', usuario:'María López', cod_patrimonio:'PAT-002', fecha_adq:'2020-08-10', n2:'', marca_cpu:'Dell', modelo_cpu:'OptiPlex 3080', serie_cpu:'SN-DL-002', estado_cpu:'Regular', marca_mb:'Dell', modelo_mb:'0T1D10', marca_proc:'Intel', procesador:'Core i3-10100', velocidad_proc:'3.6GHz', gen_proc:'10ma', tipo_mem:'DDR4', total_mem:'8', marca_disco:'WD', cap_disco:'1TB', modelo_disco:'Blue', tipo_disco:'HDD', marca_tvideo:'Intel', modelo_tvideo:'UHD 630', marca_dvd:'', tipo_dvd:'', velocidad_grabadora:'', marca_teclado:'Dell', modelo_teclado:'KB216', serie_teclado:'TC-002', cod_teclado:'PAT-TEC-002', estado_teclado:'Regular', marca_mouse:'Dell', modelo_mouse:'MS116', serie_mouse:'MS-002', estado_mouse:'Bueno', marca_monitor:'Samsung', tipo_monitor:'LED', modelo_monitor:'S24F350', pulgadas_monitor:'24', serie_monitor:'MON-002', cod_monitor:'PAT-MON-002', estado_monitor:'Bueno', marca_estab:'APC', modelo_estab:'BE600M1', serie_estab:'EST-002', cod_estab:'PAT-EST-002', estado_estab:'Bueno', nombre_so:'Windows 10 Pro', num_so:'LIC-002', key_so:'YYYYY-YYYYY-YYYYY', software_oficina:'Office 365', key_software_oficina:'OFF-002', internet:'Sí', antivirus:'Windows Defender', fecha_registro:'10/08/2020' },
+    { nombre_pc:'PC-EMG-001', numero_ip:'192.168.1.30', unidad:'Emergencias', oficina:'Triage', area:'Urgencias', usuario:'Carlos Ramos', cod_patrimonio:'PAT-003', fecha_adq:'2019-05-20', n2:'Equipo antiguo', marca_cpu:'Lenovo', modelo_cpu:'ThinkCentre M720q', serie_cpu:'SN-LN-003', estado_cpu:'Malo', marca_mb:'Lenovo', modelo_mb:'3111', marca_proc:'Intel', procesador:'Core i7-8700', velocidad_proc:'3.2GHz', gen_proc:'8va', tipo_mem:'DDR4', total_mem:'16', marca_disco:'Toshiba', cap_disco:'500GB', modelo_disco:'L200', tipo_disco:'HDD', marca_tvideo:'Intel', modelo_tvideo:'UHD 630', marca_dvd:'ASUS', tipo_dvd:'DVD-RW', velocidad_grabadora:'16x', marca_teclado:'Lenovo', modelo_teclado:'Standard', serie_teclado:'TC-003', cod_teclado:'PAT-TEC-003', estado_teclado:'Malo', marca_mouse:'Lenovo', modelo_mouse:'M120', serie_mouse:'MS-003', estado_mouse:'Regular', marca_monitor:'Acer', tipo_monitor:'LCD', modelo_monitor:'V196L', pulgadas_monitor:'19', serie_monitor:'MON-003', cod_monitor:'PAT-MON-003', estado_monitor:'Malo', marca_estab:'FORZA', modelo_estab:'NT-702', serie_estab:'EST-003', cod_estab:'PAT-EST-003', estado_estab:'Regular', nombre_so:'Windows 7 Pro', num_so:'LIC-003', key_so:'ZZZZZ-ZZZZZ-ZZZZZ', software_oficina:'Office 2016', key_software_oficina:'OFF-003', internet:'No', antivirus:'Avast', fecha_registro:'20/05/2019' },
+    { nombre_pc:'PC-RH-001', numero_ip:'192.168.1.40', unidad:'Recursos Humanos', oficina:'RRHH', area:'Personal', usuario:'Ana Torres', cod_patrimonio:'PAT-004', fecha_adq:'2022-01-10', n2:'', marca_cpu:'HP', modelo_cpu:'EliteDesk 800 G5', serie_cpu:'SN-HP-004', estado_cpu:'Bueno', marca_mb:'HP', modelo_mb:'8592', marca_proc:'Intel', procesador:'Core i5-9500', velocidad_proc:'3.0GHz', gen_proc:'9na', tipo_mem:'DDR4', total_mem:'8', marca_disco:'WD', cap_disco:'256GB', modelo_disco:'SN550', tipo_disco:'SSD', marca_tvideo:'Intel', modelo_tvideo:'UHD 630', marca_dvd:'', tipo_dvd:'', velocidad_grabadora:'', marca_teclado:'HP', modelo_teclado:'SK2000', serie_teclado:'TC-004', cod_teclado:'PAT-TEC-004', estado_teclado:'Bueno', marca_mouse:'HP', modelo_mouse:'X1500', serie_mouse:'MS-004', estado_mouse:'Bueno', marca_monitor:'Dell', tipo_monitor:'LED', modelo_monitor:'E2216H', pulgadas_monitor:'22', serie_monitor:'MON-004', cod_monitor:'PAT-MON-004', estado_monitor:'Bueno', marca_estab:'APC', modelo_estab:'BE700G', serie_estab:'EST-004', cod_estab:'PAT-EST-004', estado_estab:'Bueno', nombre_so:'Windows 11 Pro', num_so:'LIC-004', key_so:'AAAAA-AAAAA-AAAAA', software_oficina:'Office 2021', key_software_oficina:'OFF-004', internet:'Sí', antivirus:'Bitdefender', fecha_registro:'10/01/2022' },
+    { nombre_pc:'PC-CON-001', numero_ip:'192.168.1.50', unidad:'Contabilidad', oficina:'Contabilidad', area:'Finanzas', usuario:'Luis Soto', cod_patrimonio:'PAT-005', fecha_adq:'2021-11-05', n2:'', marca_cpu:'HP', modelo_cpu:'ProDesk 600 G5', serie_cpu:'SN-HP-005', estado_cpu:'Bueno', marca_mb:'HP', modelo_mb:'83E2', marca_proc:'Intel', procesador:'Core i7-9700', velocidad_proc:'3.0GHz', gen_proc:'9na', tipo_mem:'DDR4', total_mem:'16', marca_disco:'Samsung', cap_disco:'512GB', modelo_disco:'870 EVO', tipo_disco:'SSD', marca_tvideo:'Nvidia', modelo_tvideo:'GT 1030', marca_dvd:'', tipo_dvd:'', velocidad_grabadora:'', marca_teclado:'HP', modelo_teclado:'SK2000', serie_teclado:'TC-005', cod_teclado:'PAT-TEC-005', estado_teclado:'Bueno', marca_mouse:'HP', modelo_mouse:'X500', serie_mouse:'MS-005', estado_mouse:'Bueno', marca_monitor:'LG', tipo_monitor:'LED', modelo_monitor:'27MK400H', pulgadas_monitor:'27', serie_monitor:'MON-005', cod_monitor:'PAT-MON-005', estado_monitor:'Bueno', marca_estab:'COMSOL', modelo_estab:'GS-750', serie_estab:'EST-005', cod_estab:'PAT-EST-005', estado_estab:'Bueno', nombre_so:'Windows 10 Pro', num_so:'LIC-005', key_so:'BBBBB-BBBBB-BBBBB', software_oficina:'Office 2019', key_software_oficina:'OFF-005', internet:'Sí', antivirus:'Kaspersky', fecha_registro:'05/11/2021' }
+  ];
+
+  var _personal = [
+    { dni:'45123678', nombres_completos:'Juan Pérez Mendoza', cod_modalidad:'CAS', des_modalidad:'Contrato Administrativo', cod_cargo:'INF-01', des_cargo:'Jefe de TI', cod_servicio:'ADM', des_servicio:'Administración', equipo_asignado:'PC-ADM-001', fecha_nac:'1985-06-15' },
+    { dni:'32654987', nombres_completos:'María López Quispe', cod_modalidad:'CAP', des_modalidad:'Contrato a Plazo', cod_cargo:'LAB-01', des_cargo:'Analista de Lab', cod_servicio:'LAB', des_servicio:'Laboratorio', equipo_asignado:'PC-LAB-001', fecha_nac:'1990-02-20' },
+    { dni:'71234560', nombres_completos:'Carlos Ramos Díaz', cod_modalidad:'SNP', des_modalidad:'Servicios No Personales', cod_cargo:'EMG-01', des_cargo:'Técnico Emergencias', cod_servicio:'EMG', des_servicio:'Emergencias', equipo_asignado:'PC-EMG-001', fecha_nac:'1992-11-03' },
+    { dni:'44567890', nombres_completos:'Ana Torres Vega', cod_modalidad:'CAS', des_modalidad:'Contrato Administrativo', cod_cargo:'RRHH-01', des_cargo:'Analista RRHH', cod_servicio:'RRHH', des_servicio:'Recursos Humanos', equipo_asignado:'PC-RH-001', fecha_nac:'1988-07-25' }
+  ];
+
+  var _mantenimientos = [
+    { id_mant:'MANT-001', equipo:'PC-EMG-001', usuario:'Carlos Ramos', tecnico_nombre:'José Flores', tipo:'Correctivo', estado:'Terminado', fecha_prog:'2024-01-10', fecha_aten:'2024-01-12', problema:'PC no enciende', solucion:'Cambio de fuente de poder', observaciones:'Recomendar reemplazo del equipo', fecha_registro:'10/01/2024' },
+    { id_mant:'MANT-002', equipo:'PC-LAB-001', usuario:'María López', tecnico_nombre:'José Flores', tipo:'Preventivo', estado:'En curso', fecha_prog:'2024-03-15', fecha_aten:'', problema:'Mantenimiento preventivo trimestral', solucion:'', observaciones:'', fecha_registro:'15/03/2024' },
+    { id_mant:'MANT-003', equipo:'PC-ADM-001', usuario:'Juan Pérez', tecnico_nombre:'', tipo:'', estado:'Pendiente', fecha_prog:'2024-04-20', fecha_aten:'', problema:'Pantalla parpadea', solucion:'', observaciones:'', fecha_registro:'20/04/2024' },
+    { id_mant:'MANT-004', equipo:'PC-RH-001', usuario:'Ana Torres', tecnico_nombre:'Rosa Mamani', tipo:'Formateo', estado:'Programado', fecha_prog:'2024-05-05', fecha_aten:'', problema:'Virus y lentitud', solucion:'', observaciones:'', fecha_registro:'01/05/2024' }
+  ];
+
+  var _impresoras = [
+    { numero:1, unidad_dpto:'Administración', area_servicio:'Gerencia', usuario:'Juan Pérez', codpat:'PAT-IMP-001', cod_inv:'INV-001', tipo_equipo:'Impresora', marca:'HP', modelo:'LaserJet Pro M404n', tipo_impresora:'Láser', serie:'VNB3K89221', mac:'', ubicacion:'Oficina Central', observacion:'', adm_asis:'Activo', coincidente:'Sí', baja:'No', esta_sn:'Activo', estado:'Bueno', nota:'' },
+    { numero:2, unidad_dpto:'Laboratorio', area_servicio:'Lab Clínico', usuario:'María López', codpat:'PAT-IMP-002', cod_inv:'INV-002', tipo_equipo:'Impresora', marca:'Epson', modelo:'EcoTank L3250', tipo_impresora:'Tinta', serie:'X5DT002143', mac:'', ubicacion:'Lab Clínico', observacion:'Sin tinta negra', adm_asis:'Activo', coincidente:'Sí', baja:'No', esta_sn:'Activo', estado:'Regular', nota:'Requiere tinta' }
+  ];
+
+  var _METODOS = {
+    obtenerResumenEquipos: function() {
+      var bueno = _equipos.filter(function(e){return e.estado_cpu==='Bueno';}).length;
+      var regular = _equipos.filter(function(e){return e.estado_cpu==='Regular';}).length;
+      var malo = _equipos.filter(function(e){return e.estado_cpu==='Malo';}).length;
+      return { total: _equipos.length, bueno: bueno, regular: regular, malo: malo, equipos: _equipos.slice() };
+    },
+    obtenerEquiposCached: function() { return _equipos.slice(); },
+    obtenerEquipos: function() { return _equipos.slice(); },
+    obtenerEquiposParaSelector: function() { return _equipos.map(function(e){return e.nombre_pc;}); },
+    obtenerEquiposPorUsuario: function(usuario) {
+      return _equipos.filter(function(e){return e.usuario===usuario;}).map(function(e){return e.nombre_pc;});
+    },
+    buscarEquipo: function(texto) {
+      var t = texto.toLowerCase();
+      return _equipos.filter(function(e){
+        return (e.nombre_pc+e.usuario+e.area+e.oficina+e.procesador+e.nombre_so+e.cod_patrimonio).toLowerCase().indexOf(t) !== -1;
+      });
+    },
+    registrarEquipo: function(eq) {
+      if (_equipos.some(function(e){return e.nombre_pc===eq.nombre_pc;})) return 'Ya existe un equipo con ese nombre.';
+      eq.fecha_registro = new Date().toLocaleDateString('es-PE');
+      _equipos.push(eq);
+      return 'Equipo registrado correctamente.';
+    },
+    actualizarEquipo: function(eq) {
+      var idx = _equipos.findIndex(function(e){return e.nombre_pc===eq.nombre_pc;});
+      if (idx === -1) return 'Equipo no encontrado.';
+      _equipos[idx] = Object.assign(_equipos[idx], eq);
+      return 'Equipo actualizado correctamente.';
+    },
+    eliminarEquipo: function(nombre_pc) {
+      var idx = _equipos.findIndex(function(e){return e.nombre_pc===nombre_pc;});
+      if (idx === -1) return 'Equipo no encontrado.';
+      _equipos.splice(idx, 1);
+      return 'Equipo eliminado correctamente.';
+    },
+    obtenerListas: function() {
+      return {
+        estado_cpu: ['Bueno','Regular','Malo'],
+        tipo_mem: ['DDR3','DDR4','DDR5'],
+        tipo_disco: ['HDD','SSD','NVMe'],
+        tipo_monitor: ['LCD','LED','IPS','TN'],
+        internet: ['Sí','No'],
+        antivirus: ['ESET NOD32','Kaspersky','Windows Defender','Avast','Bitdefender','Malwarebytes']
+      };
+    },
+    obtenerCargos: function() {
+      return [
+        {codigo:'INF-01', descripcion:'Jefe de TI'}, {codigo:'INF-02', descripcion:'Técnico TI'},
+        {codigo:'LAB-01', descripcion:'Analista de Lab'}, {codigo:'EMG-01', descripcion:'Técnico Emergencias'},
+        {codigo:'RRHH-01', descripcion:'Analista RRHH'}, {codigo:'ADM-01', descripcion:'Administrador'},
+        {codigo:'MED-01', descripcion:'Médico'}, {codigo:'ENF-01', descripcion:'Enfermero/a'}
+      ];
+    },
+    obtenerOficinas: function() {
+      return [
+        {codigo:'ADM', descripcion:'Administración'}, {codigo:'LAB', descripcion:'Laboratorio'},
+        {codigo:'EMG', descripcion:'Emergencias'}, {codigo:'RRHH', descripcion:'Recursos Humanos'},
+        {codigo:'CON', descripcion:'Contabilidad'}, {codigo:'FAR', descripcion:'Farmacia'},
+        {codigo:'RAD', descripcion:'Radiología'}, {codigo:'CIR', descripcion:'Cirugía'}
+      ];
+    },
+    obtenerModalidades: function() {
+      return [
+        {codigo:'CAS', descripcion:'Contrato Administrativo de Servicios'},
+        {codigo:'CAP', descripcion:'Contrato a Plazo Indeterminado'},
+        {codigo:'SNP', descripcion:'Servicios No Personales'},
+        {codigo:'DL276', descripcion:'Decreto Legislativo 276'}
+      ];
+    },
+    obtenerPersonalCached: function() { return _personal.slice(); },
+    registrarPersonal: function(p) {
+      if (_personal.some(function(x){return x.dni===p.dni;})) return 'Ya existe personal con ese DNI.';
+      _personal.push(p);
+      return 'Personal registrado correctamente.';
+    },
+    actualizarPersonal: function(p) {
+      var idx = _personal.findIndex(function(x){return x.dni===p.dni;});
+      if (idx===-1) return 'Personal no encontrado.';
+      _personal[idx] = Object.assign(_personal[idx], p);
+      return 'Personal actualizado correctamente.';
+    },
+    eliminarPersonal: function(dni) {
+      var idx = _personal.findIndex(function(x){return x.dni===dni;});
+      if (idx===-1) return 'Personal no encontrado.';
+      _personal.splice(idx,1);
+      return 'Personal eliminado correctamente.';
+    },
+    obtenerMantenimientosCached: function() { return _mantenimientos.slice(); },
+    obtenerTecnicos: function() {
+      return [{nombre:'José Flores'},{nombre:'Rosa Mamani'},{nombre:'Pedro Quispe'},{nombre:'Luis Cárdenas'}];
+    },
+    registrarMantenimiento: function(m) {
+      m.id_mant = genId();
+      m.fecha_registro = new Date().toLocaleDateString('es-PE');
+      _mantenimientos.push(m);
+      return 'Mantenimiento registrado correctamente.';
+    },
+    actualizarMantenimiento: function(m) {
+      var idx = _mantenimientos.findIndex(function(x){return x.id_mant===m.id_mant;});
+      if (idx===-1) return 'Mantenimiento no encontrado.';
+      _mantenimientos[idx] = Object.assign(_mantenimientos[idx], m);
+      return 'Mantenimiento actualizado correctamente.';
+    },
+    eliminarMantenimiento: function(id) {
+      var idx = _mantenimientos.findIndex(function(x){return x.id_mant===id;});
+      if (idx===-1) return 'Mantenimiento no encontrado.';
+      _mantenimientos.splice(idx,1);
+      return 'Mantenimiento eliminado correctamente.';
+    },
+    obtenerListasImpresoras: function() {
+      return {
+        marcas: ['HP','Epson','Canon','Samsung','Brother','Lexmark'],
+        modelos: ['LaserJet Pro M404n','EcoTank L3250','PIXMA G2110','ML-2165W','HL-L2350DW'],
+        tipos: ['Láser','Tinta','Matricial','Térmica'],
+        estados: ['Bueno','Regular','Malo']
+      };
+    },
+    obtenerImpresorasCached: function() { return _impresoras.slice(); },
+    registrarImpresora: function(imp) {
+      if (_impresoras.some(function(x){return x.codpat===imp.codpat;})) return 'Ya existe una impresora con ese código de patrimonio.';
+      imp.numero = _impresoras.length + 1;
+      _impresoras.push(imp);
+      return 'Impresora registrada correctamente.';
+    },
+    actualizarImpresora: function(imp) {
+      var idx = _impresoras.findIndex(function(x){return x.codpat===imp.codpat;});
+      if (idx===-1) return 'Impresora no encontrada.';
+      _impresoras[idx] = Object.assign(_impresoras[idx], imp);
+      return 'Impresora actualizada correctamente.';
+    },
+    eliminarImpresora: function(id) {
+      var idx = _impresoras.findIndex(function(x){return x.codpat===id || x.serie===id;});
+      if (idx===-1) return 'Impresora no encontrada.';
+      _impresoras.splice(idx,1);
+      return 'Impresora eliminada correctamente.';
+    }
+  };
+
+  window.google = {
+    script: {
+      get run() {
+        var _s = null, _f = null;
+        var chain = new Proxy({}, {
+          get: function(t, prop) {
+            if (prop === 'withSuccessHandler') return function(fn) { _s = fn; return chain; };
+            if (prop === 'withFailureHandler') return function(fn) { _f = fn; return chain; };
+            if (_METODOS[prop]) {
+              return function() {
+                var args = Array.prototype.slice.call(arguments);
+                var s = _s, f = _f;
+                setTimeout(function() {
+                  try { var r = _METODOS[prop].apply(null, args); if (s) s(r); }
+                  catch(e) { if (f) f(e.message); }
+                }, 80);
+              };
+            }
+            return function() {};
+          }
+        });
+        return chain;
+      }
+    }
+  };
+
+  console.info('[DEMO MODE] google.script.run simulado con datos de prueba.');
+})();
+// =========================================================
+//  FIN MODO DEMO
+// =========================================================
+
   let searchTimeout;
   let todosLosEquipos = [];
   let _listas = {};
