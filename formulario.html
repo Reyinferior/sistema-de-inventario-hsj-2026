@@ -237,12 +237,16 @@
     <div class="mensaje" id="msgFormulario"></div>
 
     <div class="form-row">
-      <div class="form-group" style="grid-column:1/-1;">
-        <label>Nombre Completo *</label>
+      <div class="form-group">
+        <label>DNI *</label>
         <div class="autocomplete-wrapper">
-          <input type="text" id="f_usuario" placeholder="Escriba su nombre para buscar..." autocomplete="off" oninput="buscarPersonal(this.value)">
-          <div class="autocomplete-list" id="f_usuario_lista"></div>
+          <input type="text" id="f_dni" placeholder="Escriba el DNI para buscar..." maxlength="8" autocomplete="off" oninput="buscarPersonalPorDni(this.value)">
+          <div class="autocomplete-list" id="f_dni_lista"></div>
         </div>
+      </div>
+      <div class="form-group">
+        <label>Nombre Completo *</label>
+        <input type="text" id="f_usuario" placeholder="Se llena automáticamente" readonly style="background:#f8fbfd;">
       </div>
       <div class="form-group">
         <label>Área / Servicio *</label>
@@ -257,7 +261,7 @@
     <div class="form-group">
       <label>Equipo Afectado</label>
       <select id="f_equipo">
-        <option value="">-- Seleccionar equipo (opcional) --</option>
+        <option value="">-- Ingrese el DNI para cargar equipos --</option>
       </select>
     </div>
 
@@ -304,6 +308,7 @@
 <script>
   var _prioridadSeleccionada = 'Media';
   var _buscarTimer = null;
+  var _personaSeleccionada = null;
 
   function seleccionarPrioridad(valor, btn) {
     _prioridadSeleccionada = valor;
@@ -320,41 +325,49 @@
     el.textContent = texto;
   }
 
-  // ── Autocomplete de personal ──────────────────────────────────
-  function buscarPersonal(query) {
+  function buscarPersonalPorDni(query) {
+    var dni = query.replace(/\D/g, '').slice(0, 8);
+    if (dni !== query) document.getElementById('f_dni').value = dni;
     cerrarLista();
-    if (!query || query.length < 2) return;
+    limpiarDatosPersona();
+    if (!dni || dni.length < 2) return;
     clearTimeout(_buscarTimer);
     _buscarTimer = setTimeout(function() {
       if (typeof google !== 'undefined') {
         google.script.run
           .withSuccessHandler(mostrarSugerencias)
-          .withFailureHandler(function(){})
-          .buscarPersonalParaFormulario(query);
+          .withFailureHandler(function(err){ mostrarMensaje('error', 'No se pudo buscar el DNI: ' + err); })
+          .buscarPersonalParaFormulario(dni);
       } else {
         var demoPersonal = [
-          { nombres_completos:'Juan Pérez', des_servicio:'Gerencia', des_cargo:'Jefe de Área', equipo_asignado:'PC-ADM-001' },
-          { nombres_completos:'María López', des_servicio:'Laboratorio', des_cargo:'Analista', equipo_asignado:'PC-LAB-001' },
-          { nombres_completos:'Carlos Ramos', des_servicio:'Urgencias', des_cargo:'Técnico', equipo_asignado:'PC-EMG-001' },
-          { nombres_completos:'Ana Torres', des_servicio:'Recursos Humanos', des_cargo:'Asistente', equipo_asignado:'PC-RH-001' },
-          { nombres_completos:'Luis Soto', des_servicio:'Contabilidad', des_cargo:'Contador', equipo_asignado:'PC-CON-001' }
+          { dni:'45123678', nombres_completos:'Juan Pérez Mendoza', des_servicio:'Administración', des_cargo:'Jefe de TI' },
+          { dni:'32654987', nombres_completos:'María López Quispe', des_servicio:'Laboratorio', des_cargo:'Analista de Lab' },
+          { dni:'71234560', nombres_completos:'Carlos Ramos Díaz', des_servicio:'Emergencias', des_cargo:'Técnico Emergencias' },
+          { dni:'44567890', nombres_completos:'Ana Torres Vega', des_servicio:'Recursos Humanos', des_cargo:'Analista RRHH' }
         ];
-        var q = query.toLowerCase();
         mostrarSugerencias(demoPersonal.filter(function(p){
-          return p.nombres_completos.toLowerCase().indexOf(q) !== -1;
+          return p.dni.indexOf(dni) !== -1;
         }));
       }
     }, 300);
   }
 
   function mostrarSugerencias(resultados) {
-    var lista = document.getElementById('f_usuario_lista');
+    var lista = document.getElementById('f_dni_lista');
     lista.innerHTML = '';
-    if (!resultados || resultados.length === 0) { cerrarLista(); return; }
+    if (!resultados || resultados.length === 0) {
+      cerrarLista();
+      mostrarMensaje('error', 'No se encontró personal con ese DNI.');
+      return;
+    }
+    if (resultados.length === 1 && resultados[0].dni === document.getElementById('f_dni').value.trim()) {
+      seleccionarPersona(resultados[0]);
+      return;
+    }
     resultados.forEach(function(p) {
       var item = document.createElement('div');
       item.className = 'autocomplete-item';
-      item.innerHTML = '<div>' + p.nombres_completos + '</div>' +
+      item.innerHTML = '<div><strong>' + (p.dni || '') + '</strong> — ' + p.nombres_completos + '</div>' +
                        '<div class="item-cargo">' + (p.des_cargo || '') + ' — ' + (p.des_servicio || '') + '</div>';
       item.onclick = function() { seleccionarPersona(p); };
       lista.appendChild(item);
@@ -363,29 +376,85 @@
   }
 
   function seleccionarPersona(p) {
+    _personaSeleccionada = p;
+    document.getElementById('f_dni').value = p.dni || document.getElementById('f_dni').value.trim();
     document.getElementById('f_usuario').value = p.nombres_completos;
     document.getElementById('f_area').value    = p.des_servicio || '';
     document.getElementById('f_cargo').value   = p.des_cargo    || '';
+    document.getElementById('f_usuario').classList.add('field-auto');
     document.getElementById('f_area').classList.add('field-auto');
     document.getElementById('f_cargo').classList.add('field-auto');
-    if (p.equipo_asignado) {
-      var sel = document.getElementById('f_equipo');
-      for (var i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === p.equipo_asignado) { sel.selectedIndex = i; break; }
-      }
-      if (sel.value !== p.equipo_asignado) {
-        var opt = document.createElement('option');
-        opt.value = p.equipo_asignado; opt.textContent = p.equipo_asignado;
-        opt.selected = true;
-        sel.appendChild(opt);
-      }
-    }
     cerrarLista();
+    cargarEquiposDePersona(p);
   }
 
   function cerrarLista() {
-    var lista = document.getElementById('f_usuario_lista');
+    var lista = document.getElementById('f_dni_lista');
     if (lista) { lista.innerHTML = ''; lista.classList.remove('visible'); }
+  }
+
+  function limpiarDatosPersona() {
+    _personaSeleccionada = null;
+    ['f_usuario','f_area','f_cargo'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('field-auto'); }
+    });
+    cargarEquiposEnSelector([]);
+  }
+
+  function cargarEquiposDePersona(persona) {
+    cargarEquiposEnSelector([], 'Buscando equipos asignados...');
+    if (typeof google !== 'undefined') {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.persona) {
+            _personaSeleccionada = res.persona;
+            document.getElementById('f_usuario').value = res.persona.nombres_completos || persona.nombres_completos || '';
+            document.getElementById('f_area').value = res.persona.des_servicio || persona.des_servicio || '';
+            document.getElementById('f_cargo').value = res.persona.des_cargo || persona.des_cargo || '';
+          }
+          cargarEquiposEnSelector((res && res.equipos) || []);
+        })
+        .withFailureHandler(function(err) {
+          mostrarMensaje('error', 'No se pudieron cargar los equipos asignados: ' + err);
+          cargarEquiposEnSelector([]);
+        })
+        .obtenerDatosFormularioPorDni(document.getElementById('f_dni').value.trim());
+    } else {
+      var demoEquiposPorDni = {
+        '45123678': [
+          { nombre_pc:'PC-ADM-001', numero_ip:'192.168.1.10', cod_patrimonio:'PAT-001' },
+          { nombre_pc:'LAP-ADM-002', numero_ip:'192.168.1.11', cod_patrimonio:'PAT-006' }
+        ],
+        '32654987': [{ nombre_pc:'PC-LAB-001', numero_ip:'192.168.1.20', cod_patrimonio:'PAT-002' }],
+        '71234560': [{ nombre_pc:'PC-EMG-001', numero_ip:'192.168.1.30', cod_patrimonio:'PAT-003' }],
+        '44567890': [{ nombre_pc:'PC-RH-001', numero_ip:'192.168.1.40', cod_patrimonio:'PAT-004' }]
+      };
+      cargarEquiposEnSelector(demoEquiposPorDni[document.getElementById('f_dni').value.trim()] || []);
+    }
+  }
+
+  function cargarEquiposEnSelector(equipos, placeholder) {
+    var sel = document.getElementById('f_equipo');
+    sel.innerHTML = '';
+    var optInicial = document.createElement('option');
+    optInicial.value = '';
+    optInicial.textContent = placeholder || '-- No hay equipos asignados --';
+    sel.appendChild(optInicial);
+
+    if (!equipos || equipos.length === 0) return;
+
+    optInicial.textContent = equipos.length === 1 ? '-- Equipo asignado --' : '-- Seleccione el equipo afectado --';
+    equipos.forEach(function(e) {
+      var opt = document.createElement('option');
+      opt.value = e.nombre_pc || e;
+      var detalle = [];
+      if (e.numero_ip) detalle.push('IP: ' + e.numero_ip);
+      if (e.cod_patrimonio) detalle.push('Patrimonio: ' + e.cod_patrimonio);
+      opt.textContent = (e.nombre_pc || e) + (detalle.length ? ' (' + detalle.join(' · ') + ')' : '');
+      sel.appendChild(opt);
+    });
+    if (equipos.length === 1) sel.selectedIndex = 1;
   }
 
   document.addEventListener('click', function(e) {
@@ -394,13 +463,15 @@
 
   // ── Enviar formulario ─────────────────────────────────────────
   function enviarFormulario() {
+    var dni      = document.getElementById('f_dni').value.trim();
     var usuario  = document.getElementById('f_usuario').value.trim();
     var area     = document.getElementById('f_area').value.trim();
     var problema = document.getElementById('f_problema').value.trim();
     var equipo   = document.getElementById('f_equipo').value;
     var prioridad = _prioridadSeleccionada;
 
-    if (!usuario)  { mostrarMensaje('error', 'Por favor ingrese su nombre completo.'); return; }
+    if (!dni)      { mostrarMensaje('error', 'Por favor ingrese su DNI.'); return; }
+    if (!usuario)  { mostrarMensaje('error', 'No se encontró personal para el DNI ingresado.'); return; }
     if (!area)     { mostrarMensaje('error', 'Por favor ingrese su área o servicio.'); return; }
     if (!problema) { mostrarMensaje('error', 'Por favor describa el problema.'); return; }
 
@@ -408,6 +479,7 @@
     document.getElementById('btnEnviar').disabled = true;
 
     var ticket = {
+      dni: dni,
       usuario: usuario,
       area: area,
       equipo: equipo,
@@ -439,11 +511,12 @@
   }
 
   function reiniciarFormulario() {
-    ['f_usuario','f_area','f_cargo','f_problema'].forEach(function(id){
+    ['f_dni','f_usuario','f_area','f_cargo','f_problema'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) { el.value = ''; el.classList.remove('field-auto'); }
     });
-    document.getElementById('f_equipo').value = '';
+    _personaSeleccionada = null;
+    cargarEquiposEnSelector([], '-- Ingrese el DNI para cargar equipos --');
     cerrarLista();
     seleccionarPrioridad('Media', document.querySelectorAll('.prioridad-btn')[1]);
     document.getElementById('msgFormulario').className = 'mensaje';
@@ -452,27 +525,7 @@
     document.getElementById('successSection').style.display = 'none';
   }
 
-  // ── Cargar equipos en el selector ────────────────────────────
-  if (typeof google !== 'undefined') {
-    google.script.run
-      .withSuccessHandler(function(nombres) {
-        var sel = document.getElementById('f_equipo');
-        nombres.forEach(function(n) {
-          var opt = document.createElement('option');
-          opt.value = n; opt.textContent = n;
-          sel.appendChild(opt);
-        });
-      })
-      .obtenerEquiposParaSelector();
-  } else {
-    var demoEquipos = ['PC-ADM-001','PC-LAB-001','PC-EMG-001','PC-RH-001','PC-CON-001'];
-    var sel = document.getElementById('f_equipo');
-    demoEquipos.forEach(function(n) {
-      var opt = document.createElement('option');
-      opt.value = n; opt.textContent = n;
-      sel.appendChild(opt);
-    });
-  }
+  cargarEquiposEnSelector([], '-- Ingrese el DNI para cargar equipos --');
 </script>
 
 </body>

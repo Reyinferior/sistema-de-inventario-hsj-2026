@@ -932,6 +932,106 @@ function obtenerEquiposPorUsuario(nombreUsuario) {
   }
 }
 
+function obtenerDatosFormularioPorDni(dni) {
+  try {
+    if (!dni || dni.toString().trim().length < 2) {
+      return { persona: null, equipos: [] };
+    }
+
+    var dniBuscado = dni.toString().trim();
+    var personal = obtenerPersonalCached();
+    var persona = null;
+
+    for (var i = 0; i < personal.length; i++) {
+      if ((personal[i].dni || '').toString().trim() === dniBuscado) {
+        persona = personal[i];
+        break;
+      }
+    }
+
+    if (!persona) {
+      return { persona: null, equipos: [] };
+    }
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hojaEquipos = ss.getSheetByName(HOJA_EQUIPOS);
+    var nombrePersona = (persona.nombres_completos || '').toString().toLowerCase().trim();
+    var equiposAsignados = [];
+    var vistos = {};
+
+    if (hojaEquipos && hojaEquipos.getLastRow() >= 2) {
+      var datosEquipos = hojaEquipos.getDataRange().getValues();
+      var encabezadosEquipos = datosEquipos[0].map(function(h) {
+        return (h || '').toString().toLowerCase().trim();
+      });
+      var idxNombrePc = _buscarIndiceEncabezado(encabezadosEquipos, ['nombre pc', 'nombre_pc', 'equipo'], 0);
+      var idxUsuario = _buscarIndiceEncabezado(encabezadosEquipos, ['usuario', 'usuario(a)', 'user'], 5);
+      var idxDni = _buscarIndiceEncabezado(encabezadosEquipos, ['dni', 'documento'], -1);
+      var idxIp = _buscarIndiceEncabezado(encabezadosEquipos, ['número de ip', 'numero_ip', 'ip'], 1);
+      var idxPatrimonio = _buscarIndiceEncabezado(encabezadosEquipos, ['cod. patrimonio', 'cod_patrimonio', 'patrimonio'], 6);
+      var idxArea = _buscarIndiceEncabezado(encabezadosEquipos, ['área', 'area'], 4);
+      var idxOficina = _buscarIndiceEncabezado(encabezadosEquipos, ['oficina'], 3);
+
+      for (var j = 1; j < datosEquipos.length; j++) {
+        var fila = datosEquipos[j];
+        var usuarioEquipo = (fila[idxUsuario] || '').toString().toLowerCase().trim();
+        var dniEquipo = idxDni >= 0 ? (fila[idxDni] || '').toString().trim() : '';
+        var coincidePorDni = dniEquipo === dniBuscado || usuarioEquipo === dniBuscado.toLowerCase();
+        var coincidePorNombre = nombrePersona && usuarioEquipo === nombrePersona;
+        var coincideParcialNombre = nombrePersona && (
+          usuarioEquipo.indexOf(nombrePersona) !== -1 ||
+          nombrePersona.indexOf(usuarioEquipo) !== -1
+        );
+
+        if (coincidePorDni || coincidePorNombre || coincideParcialNombre) {
+          var nombreEquipo = (fila[idxNombrePc] || '').toString().trim();
+          if (nombreEquipo && !vistos[nombreEquipo]) {
+            vistos[nombreEquipo] = true;
+            equiposAsignados.push({
+              nombre_pc: nombreEquipo,
+              numero_ip: fila[idxIp] || '',
+              cod_patrimonio: fila[idxPatrimonio] || '',
+              area: fila[idxArea] || '',
+              oficina: fila[idxOficina] || ''
+            });
+          }
+        }
+      }
+    }
+
+    var equipoPersonal = (persona.equipo_asignado || '').toString().trim();
+    if (equipoPersonal && !vistos[equipoPersonal]) {
+      equiposAsignados.push({
+        nombre_pc: equipoPersonal,
+        numero_ip: '',
+        cod_patrimonio: '',
+        area: persona.des_servicio || '',
+        oficina: ''
+      });
+    }
+
+    return {
+      persona: {
+        dni: persona.dni || '',
+        nombres_completos: persona.nombres_completos || '',
+        des_servicio: persona.des_servicio || '',
+        des_cargo: persona.des_cargo || ''
+      },
+      equipos: equiposAsignados
+    };
+  } catch(err) {
+    throw new Error('Error al buscar datos por DNI: ' + err.message);
+  }
+}
+
+function _buscarIndiceEncabezado(encabezados, posibles, fallback) {
+  for (var i = 0; i < posibles.length; i++) {
+    var idx = encabezados.indexOf(posibles[i]);
+    if (idx !== -1) return idx;
+  }
+  return fallback;
+}
+
 
 // ... todo tu código actual ...
 // ... obtenerEquiposPorUsuario() es la última función que tienes ...
@@ -956,15 +1056,15 @@ function buscarPersonalParaFormulario(query) {
   try {
     var personal = obtenerPersonalCached();
     if (!query || query.toString().length < 2) return [];
-    var q = query.toString().toLowerCase();
+    var q = query.toString().toLowerCase().trim();
     return personal
       .filter(function(p) {
-        return (p.nombres_completos || '').toLowerCase().indexOf(q) !== -1 ||
-               (p.dni || '').indexOf(q) !== -1;
+        return (p.dni || '').toString().indexOf(q) !== -1;
       })
       .slice(0, 10)
       .map(function(p) {
         return {
+          dni:               p.dni               || '',
           nombres_completos: p.nombres_completos || '',
           des_servicio:      p.des_servicio      || '',
           des_cargo:         p.des_cargo         || '',
