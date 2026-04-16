@@ -12,10 +12,10 @@ A Google Apps Script (GAS) web application for managing IT equipment inventory a
 ## Key Files
 - `codigogs.gs` — Server-side Google Apps Script logic (CRUD, routing, sheet initialization)
 - `index.html` — Full frontend (HTML + CSS + JS, ~4600 lines)
-- `server.js` — Minimal Node.js static server for Replit preview
+- `server.js` — Minimal Node.js static server for Replit preview with explicit route handling and basic security headers
 
 ## Running in Replit
-The workflow "Start application" runs `node server.js` on port 5000, serving `index.html` for preview.
+The workflow "Start application" runs `node server.js`, serving `index.html` on `/` and `formulario.html` on `/formulario`. The server binds to `0.0.0.0` and uses `process.env.PORT` when Replit provides one, falling back to port 5000 for local preview.
 
 Note: The full app (with live data) must be deployed as a Google Apps Script Web App connected to a Google Sheets spreadsheet. In Replit, only the frontend UI is previewed statically — backend `google.script.run` calls won't function without the GAS environment.
 
